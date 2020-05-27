@@ -1,0 +1,9 @@
+README.rst
+setup.cfg
+setup.py
+src/TextFeatureSelection.py
+src/TextFeatureSelection.egg-info/PKG-INFO
+src/TextFeatureSelection.egg-info/SOURCES.txt
+src/TextFeatureSelection.egg-info/dependency_links.txt
+src/TextFeatureSelection.egg-info/requires.txt
+src/TextFeatureSelection.egg-info/top_level.txt

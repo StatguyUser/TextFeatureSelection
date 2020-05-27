@@ -1,12 +1,21 @@
-# What is it?
+What is it?
+===========
+
 TextFeatureSelection is a Python package providing feature selection for text tokens through wrapper method of feature selection and we can set a threshold to decide which words to be included. There are 4 methods for helping feature selection.
+
   - **Chi-square** It measures the lack of independence between term(t) and class(c). It has a natural value of zero if t and c are independent. If it is higher, then term is dependent. It is not reliable for low-frequency terms 
+
   - **Mutual information** Rare terms will have a higher score than common terms. For multi-class categories, we will calculate MI value for all categories and will take the Max(MI) value across all categories at the word level.
+
   - **Proportional difference** How close two numbers are from becoming equal. It helps ﬁnd unigrams that occur mostly in one class of documents or the other.
+
   - **Information gain** It gives discriminatory power of the word.
 
-# How to use is it?
+How to use is it?
+=================
+
 ```python
+
 from TextFeatureSelection import TextFeatureSelection
 
 #Multiclass classification problem
@@ -25,17 +34,23 @@ result_df=fsOBJ.getScore()
 print(result_df)
 
 ```
-# Where to get it?
+Where to get it?
+================
+
 `pip install TextFeatureSelection`
 
-# Dependencies
- - [numpy](https://www.numpy.org/])
+Dependencies
+============
+
+ - [numpy](https://www.numpy.org/)
+
  - [pandas](https://pandas.pydata.org/)
+
  - [nltk](https://www.nltk.org/)
 
-# References
+References
+============
+
  - [A Comparative Study on Feature Selection in Text Categorization](https://hal.archives-ouvertes.fr/hal-00617969/document) by Yiming Yang and Jan O. Pedersen
-
  - [Categorical Proportional Difference: A Feature Selection Method for Text Categorization](https://pdfs.semanticscholar.org/6569/9f0e1159a40042cc766139f3dfac2a3860bb.pdf) by Mondelle Simeon, Robert J. Hilderman
-
  - [Feature Selection and Weighting Methods in Sentiment Analysis](https://www.researchgate.net/publication/242088860_Feature_Selection_and_Weighting_Methods_in_Sentiment_Analysis) by Tim O`Keefe and Irena Koprinska
