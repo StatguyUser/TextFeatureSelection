@@ -11,6 +11,14 @@ TextFeatureSelection is a Python package providing feature selection for text to
 
   - **Information gain** It gives discriminatory power of the word.
 
+Input parameters
+================
+
+  - **target** list object which has categories of labels. for more than one category, no need to dummy code and instead provide label encoded values as list object.
+  - **input_doc_list** List object which has text. each element of list is text corpus. No need to tokenize, as text will be tokenized in the module while processing. target and input_doc_list should have same length. 
+  - **stop_words** Words for which you will not want to have metric values calculated. Default is blank
+  - **metric_list** List object which has the metric to be calculated. There are 4 metric which are being computed as 'MI','CHI','PD','IG'. you can specify one or more than one as a list object. Default is ['MI','CHI','PD','IG']. Chi-square(CHI), Mutual information(MI), Proportional difference(PD) and Information gain(IG) are 4 metric which are calculated for each tokenized word from the corpus to aid the user for feature selection.
+
 How to use is it?
 =================
 
@@ -34,6 +42,7 @@ result_df=fsOBJ.getScore()
 print(result_df)
 
 ```
+
 Where to get it?
 ================
 
