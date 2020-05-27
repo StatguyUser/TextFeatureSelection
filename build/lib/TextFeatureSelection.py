@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[406]:
+# In[413]:
 
 
 from nltk import word_tokenize,sent_tokenize
@@ -18,7 +18,8 @@ class TextFeatureSelection():
     Chi-square(CHI), Mutual information(MI), Proportional difference(PD) and Information gain(IG) are 4 metric which are calculated for each tokenized word from the corpus to aid the user for feature selection.
 
     Chi-square and Mutual information criteria are developed using the method suggested in paper //A Comparative Study on Feature Selection in Text Categorization// by Yiming Yang and Jan O. Pedersen
-https://hal.archives-ouvertes.fr/hal-00617969/document
+http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=E5CC43FE63A1627AB4C0DBD2061FE4B9?doi=10.1.1.32.9956&rep=rep1&type=pdf
+and //Entropy based feature selection for text categorization// https://hal.archives-ouvertes.fr/hal-00617969/document by Christine Largeron, Christophe Moulin, Mathias Géry
 
     Proportional difference menthod is developed using method suggested in paper
 //Categorical Proportional Difference: A Feature Selection Method for Text Categorization// by Mondelle Simeon, Robert J. Hilderman
@@ -238,5 +239,6 @@ if __name__=="__main__":
     target=[1,1,0,1]
     fsOBJ=TextFeatureSelection(target=target,input_doc_list=input_doc_list)
     result_df=fsOBJ.getScore()
+
     print(result_df)
 

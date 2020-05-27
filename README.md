@@ -34,7 +34,9 @@ print(result_df)
  - [nltk](https://www.nltk.org/)
 
 # References
- - [A Comparative Study on Feature Selection in Text Categorization](https://hal.archives-ouvertes.fr/hal-00617969/document) by Yiming Yang and Jan O. Pedersen
+ - [A Comparative Study on Feature Selection in Text Categorization](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=E5CC43FE63A1627AB4C0DBD2061FE4B9?doi=10.1.1.32.9956&rep=rep1&type=pdf) by Yiming Yang and Jan O. Pedersen
+
+ - [Entropy based feature selection for text categorization](https://hal.archives-ouvertes.fr/hal-00617969/document) by Christine Largeron, Christophe Moulin, Mathias Géry
 
  - [Categorical Proportional Difference: A Feature Selection Method for Text Categorization](https://pdfs.semanticscholar.org/6569/9f0e1159a40042cc766139f3dfac2a3860bb.pdf) by Mondelle Simeon, Robert J. Hilderman
 
