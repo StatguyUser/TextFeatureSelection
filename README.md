@@ -1,5 +1,5 @@
 # What is it?
-TextFeatureSelection is a Python package providing feature selection for text tokens through wrapper method of feature selection and we can set a threshold to decide which words to be included. There are 4 methods for helping feature selection.
+TextFeatureSelection is a Python package providing feature selection for text tokens through filter method of feature selection and we can set a threshold to decide which words to be included. There are 4 methods for helping feature selection.
   - **Chi-square** It measures the lack of independence between term(t) and class(c). It has a natural value of zero if t and c are independent. If it is higher, then term is dependent. It is not reliable for low-frequency terms 
   - **Mutual information** Rare terms will have a higher score than common terms. For multi-class categories, we will calculate MI value for all categories and will take the Max(MI) value across all categories at the word level.
   - **Proportional difference** How close two numbers are from becoming equal. It helps ﬁnd unigrams that occur mostly in one class of documents or the other.
