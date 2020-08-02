@@ -164,11 +164,13 @@ Information gain:
                 label=[]
                 word_presence=[]
 
+                #get binary pandas series for word if it is present row-wise or not
+                word_presence=calc_df['input_doc_list'].str.contains('\\b'+word+'\\b')
+
                 for calc_base_label in set(self.target):
                     ##get binary pandas series for label if it is present row-wise or not            
                     label=calc_df['target']==calc_base_label
-                    #get binary pandas series for word if it is present row-wise or not
-                    word_presence=calc_df['input_doc_list'].str.contains('\\b'+word+'\\b')
+
                     ##check if word count is existing and labels have value, to be sure if any regex error for word.
                     if sum(word_presence) and sum(label):
                         A,B,C,D,N=self.custom_cross_tab(label,word_presence)
