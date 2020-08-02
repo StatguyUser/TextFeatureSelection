@@ -56,7 +56,24 @@ Information gain:
         self.input_doc_list=input_doc_list
         self.stop_words=stop_words
         self.metric_list=metric_list
-        
+       
+    def custom_cross_tab(self,label,word_presence):
+        A=0
+        B=0
+        C=0
+        D=0
+        for i,j in zip(list(label),list(word_presence)):
+            if i==True and j==True:
+                A+=1
+            elif i==False and j==False:
+                D+=1
+            elif i==True and j==False:
+                C+=1
+            elif i==False and j==True:
+                B+=1
+        N=A+B+C+D
+        return A,B,C,D,N
+ 
     def ChiSquare(self,A,B,C,D,N):
         return (N*((A*D)-(C*B))**2)/((A+B)*(A+C)*(B+D)*(C+D))
 
@@ -98,12 +115,7 @@ Information gain:
                 word_presence=calc_df['input_doc_list'].str.contains('\\b'+word+'\\b')
                 ##check if word count is existing and labels have value, to be sure if any regex error for word.
                 if sum(word_presence) and sum(label):
-                    cross_tab=pd.crosstab(label,word_presence)
-                    A=cross_tab[1][True]
-                    B=cross_tab[1][False]
-                    C=cross_tab[0][True]
-                    D=cross_tab[0][False]
-                    N=A+B+C+D
+                    A,B,C,D,N=self.custom_cross_tab(label,word_presence)
 
                     if 'PD' in self.metric_list:
                         pd_val.append(self.ProportionalDifference(A,B))
@@ -159,12 +171,7 @@ Information gain:
                     word_presence=calc_df['input_doc_list'].str.contains('\\b'+word+'\\b')
                     ##check if word count is existing and labels have value, to be sure if any regex error for word.
                     if sum(word_presence) and sum(label):
-                        cross_tab=pd.crosstab(label,word_presence)
-                        A=cross_tab[1][True]
-                        B=cross_tab[1][False]
-                        C=cross_tab[0][True]
-                        D=cross_tab[0][False]
-                        N=A+B+C+D
+                        A,B,C,D,N=self.custom_cross_tab(label,word_presence)
 
                         #calculate category specific values
                         if 'PD' in self.metric_list:
