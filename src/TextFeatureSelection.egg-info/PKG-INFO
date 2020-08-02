@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: TextFeatureSelection
-Version: 0.0.2
-Summary: Implementation of various algorithms for feature selection for text features based on filter method
+Version: 0.0.3
+Summary: Implementation of various algorithms for feature selection for text features, based on filter method
 Home-page: https://github.com/StatguyUser/TextFeatureSelection
 Author: StatguyUser
 License: UNKNOWN

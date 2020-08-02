@@ -12,8 +12,8 @@ else:
 
 setup(
     name='TextFeatureSelection',
-    version='0.0.2',
-    description='Implementation of various algorithms for feature selection for text features based on filter method',
+    version='0.0.3',
+    description='Implementation of various algorithms for feature selection for text features, based on filter method',
     long_description=long_description,
     long_description_content_type='text/markdown',  # This is important!
     author='StatguyUser',
