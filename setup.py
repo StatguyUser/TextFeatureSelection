@@ -12,13 +12,13 @@ else:
 
 setup(
     name='TextFeatureSelection',
-    version='0.0.5',
+    version='0.0.6',
     description='Implementation of various algorithms for feature selection for text features, based on filter method',
     long_description=long_description,
     long_description_content_type='text/markdown',  # This is important!
     author='StatguyUser',
     url='https://github.com/StatguyUser/TextFeatureSelection',
-    install_requires=['numpy','pandas','nltk','multiprocessing'],
+    install_requires=['numpy','pandas','nltk'],
     download_url='https://github.com/StatguyUser/TextFeatureSelection.git',
     py_modules=["TextFeatureSelection"],
     package_dir={'':'src'},
