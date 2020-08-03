@@ -57,6 +57,8 @@ Dependencies
 
  - [nltk](https://www.nltk.org/)
 
+ - [multiprocessing](https://docs.python.org/2/library/multiprocessing.html)
+
 References
 ============
 

@@ -5,6 +5,7 @@
 
 
 from nltk import word_tokenize,sent_tokenize
+import multiprocessing as mp
 import pandas as pd
 import numpy as np
 
@@ -57,166 +58,224 @@ Information gain:
         self.stop_words=stop_words
         self.metric_list=metric_list
        
-    def custom_cross_tab(self,label,word_presence):
-        A=0
-        B=0
-        C=0
-        D=0
+    def _custom_cross_tab(self,label,word_presence):
+        A_word=0
+        B_word=0
+        C_word=0
+        D_word=0
         for i,j in zip(list(label),list(word_presence)):
             if i==True and j==True:
-                A+=1
+                A_word+=1
             elif i==False and j==False:
-                D+=1
+                D_word+=1
             elif i==True and j==False:
-                C+=1
+                C_word+=1
             elif i==False and j==True:
-                B+=1
-        N=A+B+C+D
-        return A,B,C,D,N
+                B_word+=1
+        #N=A+B+C+D
+        return A_word,B_word,C_word,D_word
  
-    def ChiSquare(self,A,B,C,D,N):
+    def _ChiSquare(self,A,B,C,D,N):
         return (N*((A*D)-(C*B))**2)/((A+B)*(A+C)*(B+D)*(C+D))
 
-    def MutualInformation(self,A,B,C,N):
+    def _MutualInformation(self,A,B,C,N):
         return np.log((A*N)/((A+C)*(A+B)))
     
-    def InformationGain(self,A,B,C,D,N):
+    def _InformationGain(self,A,B,C,D,N):
         return (-((A+C)/N)*np.log((A+C)/N))+(A/N)*np.log(A/(A+B))+(C/N)*np.log(C/(C+D))
 
-    def ProportionalDifference(self,A,B):
+    def _ProportionalDifference(self,A,B):
         return ((A-B)*(-1))/(A+B)
     
-    def get_uniquewords(self):
+    def _get_uniquewords(self):
         ##get unique words across all documents
         if self.stop_words:
             unique_words=[word for doc in self.input_doc_list for sent in sent_tokenize(doc) for word in word_tokenize(sent) if word not in self.stop_words]
         else:
             unique_words=[word for doc in self.input_doc_list for sent in sent_tokenize(doc) for word in word_tokenize(sent)]
         unique_words=set(unique_words)
-        return unique_words
-    
-    def getvalues_singleclass(self,unique_words,calc_df):
-        pd_val=[]
-        mi=[]
-        chi=[]
-        ig=[]
-        word_list=[]
 
+        return unique_words
+
+    def _singleclass_Parallel(self,token,dataframe,label_array,results,token_presence_sum):
+
+        try:
+            token_presence=dataframe['input_doc_list'].str.contains('\\b'+token+'\\b')
+            token_presence_sum=sum(token_presence)
+            if token_presence_sum:
+                results=self._custom_cross_tab(label_array,token_presence)
+        except Exception as e:
+            pass
+
+        return results,token_presence_sum,token
+    
+    
+    def _getvalues_singleclass(self,unique_words,calc_df):
+        
         ##get base label for calculating values
         calc_base_label=list(set(self.target))[0]
-        
         ##get binary pandas series for label if it is present row-wise or not
-        label=calc_df['target']==calc_base_label
+        label_array=calc_df['target']==calc_base_label
+        
+        ##parallel computation of ABCD
+        pool=mp.Pool()
+        results=[]
+        token_presence_sum=0
+        result = pool.starmap(self._singleclass_Parallel, [(words, calc_df,label_array,results,token_presence_sum) for words in unique_words])
+        pool.close()
 
-        for word in unique_words:
-            try:
-                
-                #get binary pandas series for word if it is present row-wise or not
-                word_presence=calc_df['input_doc_list'].str.contains('\\b'+word+'\\b')
-                ##check if word count is existing and labels have value, to be sure if any regex error for word.
-                if sum(word_presence) and sum(label):
-                    A,B,C,D,N=self.custom_cross_tab(label,word_presence)
-
-                    if 'PD' in self.metric_list:
-                        pd_val.append(self.ProportionalDifference(A,B))
-                    if 'MI' in self.metric_list:
-                        mi.append(self.MutualInformation(A,B,C,N))
-                    if 'CHI' in self.metric_list:
-                        chi.append(self.ChiSquare(A,B,C,D,N))
-                    if 'IG' in self.metric_list:
-                        ig.append(self.InformationGain(A,B,C,D,N))
-
-                    word_list.append(word)
-            except Exception as e:
-                pass
-
-        values_df=pd.DataFrame({'word list':word_list,'word occurence count':sum(word_presence)})
+        ##unpacking ABCD, count and word
+        result_single = [(*x,y,z) for x,y,z  in result if x] 
+        unzp_lst = list(zip(*result_single))
+        temp_df=pd.DataFrame({'A':unzp_lst[0],'B':unzp_lst[1],'C':unzp_lst[2],'D':unzp_lst[3],'word occurence count':unzp_lst[4],'word list':unzp_lst[5]})
+        #get N
+        temp_df['N']=temp_df['A']+temp_df['B']+temp_df['C']+temp_df['D']
 
         if 'PD' in self.metric_list:
-            values_df['Proportional Difference']=pd_val
+            temp_df['Proportional Difference']=self._ProportionalDifference(temp_df.A,temp_df.B)
         if 'MI' in self.metric_list:
-            values_df['Mutual Information']=mi
+            temp_df['Mutual Information']=self._MutualInformation(temp_df.A,temp_df.B,temp_df.C,temp_df.N)
         if 'CHI' in self.metric_list:
-            values_df['Chi Square']=chi
+            temp_df['Chi Square']=self._ChiSquare(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
         if 'IG' in self.metric_list:
-            values_df['Information Gain']=ig
-            values_df['Information Gain'].replace(np.nan,0,inplace=True)            
-
-        return values_df
+            temp_df['Information Gain']=self._InformationGain(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
+            temp_df['Information Gain'].replace(np.nan,0,inplace=True)
+        
+        ##get only computed columns
+        filtered_cols=['word list','word occurence count','Proportional Difference','Mutual Information','Chi Square','Information Gain']
+        for cols in filtered_cols[2:]:
+            if cols not in temp_df.columns:
+                filtered_cols.remove(cols)
+        temp_df=temp_df[filtered_cols]
+        return temp_df
     
-    def getvalues_multiclass(self,unique_words,calc_df):
-        pd_val=[]
-        mi=[]
-        chi=[]
-        ig=[]
-        word_list=[]
-        word_count=[]
+    def _getvalues_multiclass(self,unique_words,calc_df):
+        
+        result_dict={}
 
-        #get labels flag once in anther function, result as dict
+        #for each class
+        for calc_base_label in list(set(self.target)):
+            ##get binary pandas series for label if it is present row-wise or not
+            label_array=calc_df['target']==calc_base_label
+            
+            ##parallel computation of ABCD
+            pool=mp.Pool()
+            results=[]
+            token_presence_sum=0
+            result = pool.starmap(self._singleclass_Parallel, [(words, calc_df,label_array,results,token_presence_sum) for words in unique_words])
+            pool.close()
+            
+            ##unpacking ABCD, count and word
+            result_single = [(*x,y,z) for x,y,z  in result if x] 
+            unzp_lst = list(zip(*result_single))
+            temp_df=pd.DataFrame({'A':unzp_lst[0],'B':unzp_lst[1],'C':unzp_lst[2],'D':unzp_lst[3],'word occurence count':unzp_lst[4],'word list':unzp_lst[5]})
+            #get N
+            temp_df['N']=temp_df['A']+temp_df['B']+temp_df['C']+temp_df['D']            
+            
+            
+            
+            if 'PD' in self.metric_list:
+                temp_df['Proportional Difference']=self._ProportionalDifference(temp_df.A,temp_df.B)
+            if 'MI' in self.metric_list:
+                temp_df['Mutual Information']=self._MutualInformation(temp_df.A,temp_df.B,temp_df.C,temp_df.N)
+            if 'CHI' in self.metric_list:
+                temp_df['Chi Square']=self._ChiSquare(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
+            if 'IG' in self.metric_list:
+                temp_df['Information Gain']=self._InformationGain(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
+                temp_df['Information Gain'].replace(np.nan,0,inplace=True)
+        
+            ##get only computed columns
+            filtered_cols=['word list','word occurence count','Proportional Difference','Mutual Information','Chi Square','Information Gain']
+            for cols in filtered_cols[2:]:
+                if cols not in temp_df.columns:
+                    filtered_cols.remove(cols)
+            temp_df=temp_df[filtered_cols]
 
-        for word in unique_words:
-            try:
-                #category level calculation
-                pd_val_cat=[]
-                mi_cat=[]
-                chi_cat=[]
-                ig_cat=[]
-                label=[]
-                word_presence=[]
+            ##assign to dict for master calculation
+            result_dict[calc_base_label]=temp_df
+        
+        ####merge
+        final_results_pd=pd.DataFrame()
+        final_results_mi=pd.DataFrame()
+        final_results_chi=pd.DataFrame()
+        final_results_ig=pd.DataFrame()
+        
+        #final result
+        final_results=pd.DataFrame({'word list':temp_df['word list'],'word occurence count':temp_df['word occurence count']})
+        
+        for calc_base_label in list(set(self.target)):
+            if 'PD' in self.metric_list:
+                label_df_pd=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'PD_'+calc_base_label:result_dict[calc_base_label]['Proportional Difference']})
+                if final_results_pd.shape[0]:
+                    final_results_pd=final_results_pd.merge(label_df_pd,on=['word list'])
+                else:
+                    final_results_pd=label_df_pd
 
-                #get binary pandas series for word if it is present row-wise or not
-                word_presence=calc_df['input_doc_list'].str.contains('\\b'+word+'\\b')
+                ##final calculation
+                if calc_base_label==list(set(self.target))[-1]:
+                    label_df_pd=pd.DataFrame({'word list':final_results_pd['word list'],
+                                              'Proportional Difference':final_results_pd.max(axis=1)})
+                    #assign to final result df
+                    if final_results.shape[0]:
+                        final_results=final_results.merge(label_df_pd,on=['word list'])
+                    else:
+                        final_results=label_df_pd
 
-                for calc_base_label in set(self.target):
-                    ##get binary pandas series for label if it is present row-wise or not            
-                    label=calc_df['target']==calc_base_label
+            
+            if 'MI' in self.metric_list:
+                label_df_mi=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'MI_'+calc_base_label:result_dict[calc_base_label]['Mutual Information']})
+                if final_results_mi.shape[0]:
+                    final_results_mi=final_results_mi.merge(label_df_mi,on=['word list'])
+                else:
+                    final_results_mi=label_df_mi
 
-                    ##check if word count is existing and labels have value, to be sure if any regex error for word.
-                    if sum(word_presence) and sum(label):
-                        A,B,C,D,N=self.custom_cross_tab(label,word_presence)
+                ##final calculation
+                if calc_base_label==list(set(self.target))[-1]:
+                    label_df_mi=pd.DataFrame({'word list':final_results_mi['word list'],
+                                              'Mutual Information':final_results_mi.max(axis=1)})
+                    #assign to final result df
+                    if final_results.shape[0]:
+                        final_results=final_results.merge(label_df_mi,on=['word list'])
+                    else:
+                        final_results=label_df_mi
+                    
 
-                        #calculate category specific values
-                        if 'PD' in self.metric_list:
-                            pd_val_cat.append(self.ProportionalDifference(A,B))
-                        if 'MI' in self.metric_list:
-                            mi_cat.append(self.MutualInformation(A,B,C,N))
-                        if 'CHI' in self.metric_list:
-                            chi_cat.append(self.ChiSquare(A,B,C,D,N))
-                        if 'IG' in self.metric_list:
-                            ig_cat.append(self.InformationGain(A,B,C,D,N))
+            if 'CHI' in self.metric_list:
+                label_df_chi=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'CHI_'+calc_base_label:result_dict[calc_base_label]['Chi Square']})
+                if final_results_chi.shape[0]:
+                    final_results_chi=final_results_chi.merge(label_df_chi,on=['word list'])
+                else:
+                    final_results_chi=label_df_chi
 
-                #max value across all category for metric, based on specified metric
-                if 'PD' in self.metric_list and pd_val_cat:
-                    pd_val.append(np.ma.masked_invalid(pd_val_cat).max())
+                ##final calculation
+                if calc_base_label==list(set(self.target))[-1]:
+                    label_df_chi=pd.DataFrame({'word list':final_results_chi['word list'],
+                                              'Chi Square':final_results_chi.max(axis=1)})
+                    #assign to final result df
+                    if final_results.shape[0]:
+                        final_results=final_results.merge(label_df_chi,on=['word list'])
+                    else:
+                        final_results=label_df_chi
 
-                if 'MI' in self.metric_list and mi_cat:
-                    mi.append(np.ma.masked_invalid(mi_cat).max())
+            if 'IG' in self.metric_list:
+                label_df_ig=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'IG_'+calc_base_label:result_dict[calc_base_label]['Information Gain']})
+                if final_results_ig.shape[0]:
+                    final_results_ig=final_results_ig.merge(label_df_ig,on=['word list'])
+                else:
+                    final_results_ig=label_df_ig
+                    
+                ##final calculation
+                if calc_base_label==list(set(self.target))[-1]:
+                    label_df_ig=pd.DataFrame({'word list':final_results_ig['word list'],
+                                              'Information Gain':final_results_ig.max(axis=1)})
+                    #assign to final result df
+                    if final_results.shape[0]:
+                        final_results=final_results.merge(label_df_ig,on=['word list'])
+                    else:
+                        final_results=label_df_ig
+        
+        return final_results
 
-                if 'CHI' in self.metric_list and chi_cat:
-                    chi.append(np.ma.masked_invalid(chi_cat).max())
-                        
-                if 'IG' in self.metric_list and ig_cat:
-                    ig.append(np.ma.masked_invalid(ig_cat).max())
-
-                ##if atleast one calculation list has value
-                if pd_val_cat or mi_cat or chi_cat or ig_cat:
-                    word_list.append(word)
-                    word_count.append(sum(word_presence))
-            except Exception as ex:
-                pass
-
-        values_df=pd.DataFrame({'word list':word_list,'word occurence count':word_count})
-        if 'PD' in self.metric_list:
-            values_df['Proportional Difference']=np.float64(pd_val)
-        if 'MI' in self.metric_list:
-            values_df['Mutual Information']=np.float64(mi)
-        if 'CHI' in self.metric_list:
-            values_df['Chi Square']=np.float64(chi)
-        if 'IG' in self.metric_list:
-            values_df['Information Gain']=np.float64(ig)
-            values_df['Information Gain'].replace(np.nan,0,inplace=True)
-
-        return values_df
     
     def getScore(self):
         if type(self.target)==list and type(self.input_doc_list)==list:            
@@ -224,13 +283,13 @@ Information gain:
                 print('Please provide target and input_doc_list of similar length.')
             else:
                 calc_df=pd.DataFrame({'target':self.target,'input_doc_list':self.input_doc_list})
-                unique_words=self.get_uniquewords()
+                unique_words=self._get_uniquewords()
                 if len(set(self.target))==2:
-                    values_df=self.getvalues_singleclass(unique_words,calc_df)
+                    values_df=self._getvalues_singleclass(unique_words,calc_df)
                     return values_df
                 elif len(set(self.target))>2:
-                    values_df=self.getvalues_multiclass(unique_words,calc_df)
-                    return values_df                
+                    values_df=self._getvalues_multiclass(unique_words,calc_df)
+                    return values_df
         else:
             print('Please provide target and input_doc_list both as list object.')
             
