@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: TextFeatureSelection
-Version: 0.0.4
+Version: 0.0.5
 Summary: Implementation of various algorithms for feature selection for text features, based on filter method
 Home-page: https://github.com/StatguyUser/TextFeatureSelection
 Author: StatguyUser
@@ -64,6 +64,8 @@ Description: What is it?
          - [pandas](https://pandas.pydata.org/)
         
          - [nltk](https://www.nltk.org/)
+        
+         - [multiprocessing](https://docs.python.org/2/library/multiprocessing.html)
         
         References
         ============

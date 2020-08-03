@@ -38,6 +38,7 @@ print(result_df)
  - [numpy](https://www.numpy.org/])
  - [pandas](https://pandas.pydata.org/)
  - [nltk](https://www.nltk.org/)
+ - [multiprocessing](https://docs.python.org/2/library/multiprocessing.html)
 
 # References
  - [A Comparative Study on Feature Selection in Text Categorization](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=E5CC43FE63A1627AB4C0DBD2061FE4B9?doi=10.1.1.32.9956&rep=rep1&type=pdf) by Yiming Yang and Jan O. Pedersen
