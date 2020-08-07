@@ -55,9 +55,9 @@ Dependencies
 
  - [pandas](https://pandas.pydata.org/)
 
- - [nltk](https://www.nltk.org/)
+ - [scikit-learn](https://scikit-learn.org/stable/)
 
- - [multiprocessing](https://docs.python.org/2/library/multiprocessing.html)
+ - [collections](https://docs.python.org/2/library/collections.html)
 
 References
 ============

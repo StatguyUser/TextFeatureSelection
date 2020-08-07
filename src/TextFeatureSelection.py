@@ -4,10 +4,10 @@
 # In[413]:
 
 
-from nltk import word_tokenize,sent_tokenize
-import multiprocessing as mp
+from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 import numpy as np
+from collections import Counter
 
 class TextFeatureSelection():
     '''
@@ -57,23 +57,6 @@ Information gain:
         self.input_doc_list=input_doc_list
         self.stop_words=stop_words
         self.metric_list=metric_list
-       
-    def _custom_cross_tab(self,label,word_presence):
-        A_word=0
-        B_word=0
-        C_word=0
-        D_word=0
-        for i,j in zip(list(label),list(word_presence)):
-            if i==True and j==True:
-                A_word+=1
-            elif i==False and j==False:
-                D_word+=1
-            elif i==True and j==False:
-                C_word+=1
-            elif i==False and j==True:
-                B_word+=1
-        #N=A+B+C+D
-        return A_word,B_word,C_word,D_word
  
     def _ChiSquare(self,A,B,C,D,N):
         return (N*((A*D)-(C*B))**2)/((A+B)*(A+C)*(B+D)*(C+D))
@@ -87,112 +70,130 @@ Information gain:
     def _ProportionalDifference(self,A,B):
         return ((A-B)*(-1))/(A+B)
     
-    def _get_uniquewords(self):
-        ##get unique words across all documents
-        if self.stop_words:
-            unique_words=[word for doc in self.input_doc_list for sent in sent_tokenize(doc) for word in word_tokenize(sent) if word not in self.stop_words]
-        else:
-            unique_words=[word for doc in self.input_doc_list for sent in sent_tokenize(doc) for word in word_tokenize(sent)]
-        unique_words=set(unique_words)
-
-        return unique_words
-
-    def _singleclass_Parallel(self,token,dataframe,label_array,results,token_presence_sum):
-
-        try:
-            token_presence=dataframe['input_doc_list'].str.contains('\\b'+token+'\\b')
-            token_presence_sum=sum(token_presence)
-            if token_presence_sum:
-                results=self._custom_cross_tab(label_array,token_presence)
-        except Exception as e:
+    def _get_binary_label(self,label_array):
+        #get numpy array
+        label_array=np.array(label_array)
+        unique_label=np.unique(label_array)
+        #if not binary coded already, do so
+        if 0 in unique_label and 1 in unique_label:
             pass
+        else:
+            label_array=np.where(label_array==unique_label[0],1,0)
+        return label_array
 
-        return results,token_presence_sum,token
+    def _get_term_binary_matrix(self,input_doc_list):
+
+        #initialize vectorizer
+        if self.stop_words:
+            #unique word and word count
+            vectorizer = CountVectorizer(stop_words=self.stop_words)
+            X = vectorizer.fit_transform(input_doc_list)
+            word_list = vectorizer.get_feature_names()
+
+            #binary word document matrix
+            vectorizer = CountVectorizer(binary=True,stop_words=self.stop_words)
+            X = vectorizer.fit_transform(input_doc_list)
+            word_binary_matrix = X.toarray()
+            count_list = word_binary_matrix.sum(axis=0)
+            
+            ##return
+            return word_list,count_list,word_binary_matrix
+        else:
+            #unique word and word count
+            vectorizer = CountVectorizer()
+            X = vectorizer.fit_transform(input_doc_list)
+            word_list = vectorizer.get_feature_names()
+
+            #binary word document matrix
+            vectorizer = CountVectorizer(binary=True)
+            X = vectorizer.fit_transform(input_doc_list)
+            word_binary_matrix = X.toarray()
+            count_list = word_binary_matrix.sum(axis=0)
+            ##return
+            return word_list,count_list,word_binary_matrix
+
+    def _get_ABCD(self,word_binary_matrix,label_array):
+
+        A=[]
+        B=[]
+        C=[]
+        D=[]
+        for i in range(word_binary_matrix.shape[1]):
+            computed_result=Counter(label_array * 2 + word_binary_matrix[:,i])
+            A.append(computed_result[1])
+            B.append(computed_result[3])
+            C.append(computed_result[0])
+            D.append(computed_result[2])
+
+        A=np.array(A)
+        B=np.array(B)
+        C=np.array(C)
+        D=np.array(D)
+        N=A+B+C+D
+        return A,B,C,D,N
     
     
-    def _getvalues_singleclass(self,unique_words,calc_df):
-        
-        ##get base label for calculating values
-        calc_base_label=list(set(self.target))[0]
-        ##get binary pandas series for label if it is present row-wise or not
-        label_array=calc_df['target']==calc_base_label
-        
-        ##parallel computation of ABCD
-        pool=mp.Pool()
-        results=[]
-        token_presence_sum=0
-        result = pool.starmap(self._singleclass_Parallel, [(words, calc_df,label_array,results,token_presence_sum) for words in unique_words])
-        pool.close()
+    def _getvalues_singleclass(self):
+                
+        #get binary labels
+        label_array=self._get_binary_label(self.target)
 
-        ##unpacking ABCD, count and word
-        result_single = [(*x,y,z) for x,y,z  in result if x] 
-        unzp_lst = list(zip(*result_single))
-        temp_df=pd.DataFrame({'A':unzp_lst[0],'B':unzp_lst[1],'C':unzp_lst[2],'D':unzp_lst[3],'word occurence count':unzp_lst[4],'word list':unzp_lst[5]})
-        #get N
-        temp_df['N']=temp_df['A']+temp_df['B']+temp_df['C']+temp_df['D']
+        #get word, count, binary matrix
+        word_list,count_list,word_binary_matrix=self._get_term_binary_matrix(self.input_doc_list)
 
+        #get ABCDN
+        A,B,C,D,N=self._get_ABCD(word_binary_matrix,label_array)
+        
+        #create DF
+        out_df=pd.DataFrame({'word list':word_list,'word occurence count':count_list})
         if 'PD' in self.metric_list:
-            temp_df['Proportional Difference']=self._ProportionalDifference(temp_df.A,temp_df.B)
+            aa=self._ProportionalDifference(A,B)
+            out_df['Proportional Difference']=self._ProportionalDifference(A,B)
         if 'MI' in self.metric_list:
-            temp_df['Mutual Information']=self._MutualInformation(temp_df.A,temp_df.B,temp_df.C,temp_df.N)
+            aa=self._MutualInformation(A,B,C,N)
+            out_df['Mutual Information']=self._MutualInformation(A,B,C,N)
         if 'CHI' in self.metric_list:
-            temp_df['Chi Square']=self._ChiSquare(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
+            aa=self._ChiSquare(A,B,C,D,N)
+            out_df['Chi Square']=self._ChiSquare(A,B,C,D,N)
         if 'IG' in self.metric_list:
-            temp_df['Information Gain']=self._InformationGain(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
-            temp_df['Information Gain'].replace(np.nan,0,inplace=True)
-        
-        ##get only computed columns
-        filtered_cols=['word list','word occurence count','Proportional Difference','Mutual Information','Chi Square','Information Gain']
-        for cols in filtered_cols[2:]:
-            if cols not in temp_df.columns:
-                filtered_cols.remove(cols)
-        temp_df=temp_df[filtered_cols]
-        return temp_df
+            aa=self._InformationGain(A,B,C,D,N)
+            out_df['Information Gain']=self._InformationGain(A,B,C,D,N)
+            out_df['Information Gain'].replace(np.nan,0,inplace=True)
+
+        return out_df
     
-    def _getvalues_multiclass(self,unique_words,calc_df):
+    def _getvalues_multiclass(self):
         
+        #labels as numpy array
+        numpy_target=np.array(self.target)
+        
+        #get word, count, binary matrix
+        word_list,count_list,word_binary_matrix=self._get_term_binary_matrix(self.input_doc_list)
         result_dict={}
 
         #for each class
         for calc_base_label in list(set(self.target)):
-            ##get binary pandas series for label if it is present row-wise or not
-            label_array=calc_df['target']==calc_base_label
+            #get binary labels
+            label_array=np.where(numpy_target==calc_base_label,1,0)
+
+            #get ABCDN
+            B,A,D,C,N=self._get_ABCD(word_binary_matrix,label_array)
             
-            ##parallel computation of ABCD
-            pool=mp.Pool()
-            results=[]
-            token_presence_sum=0
-            result = pool.starmap(self._singleclass_Parallel, [(words, calc_df,label_array,results,token_presence_sum) for words in unique_words])
-            pool.close()
-            
-            ##unpacking ABCD, count and word
-            result_single = [(*x,y,z) for x,y,z  in result if x] 
-            unzp_lst = list(zip(*result_single))
-            temp_df=pd.DataFrame({'A':unzp_lst[0],'B':unzp_lst[1],'C':unzp_lst[2],'D':unzp_lst[3],'word occurence count':unzp_lst[4],'word list':unzp_lst[5]})
-            #get N
-            temp_df['N']=temp_df['A']+temp_df['B']+temp_df['C']+temp_df['D']            
-            
-            
-            
+            #create DF
+            out_df=pd.DataFrame({'word list':word_list,'word occurence count':count_list})
+
             if 'PD' in self.metric_list:
-                temp_df['Proportional Difference']=self._ProportionalDifference(temp_df.A,temp_df.B)
+                out_df['Proportional Difference']=self._ProportionalDifference(A,B)
             if 'MI' in self.metric_list:
-                temp_df['Mutual Information']=self._MutualInformation(temp_df.A,temp_df.B,temp_df.C,temp_df.N)
+                out_df['Mutual Information']=self._MutualInformation(A,B,C,N)
             if 'CHI' in self.metric_list:
-                temp_df['Chi Square']=self._ChiSquare(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
+                out_df['Chi Square']=self._ChiSquare(A,B,C,D,N)
             if 'IG' in self.metric_list:
-                temp_df['Information Gain']=self._InformationGain(temp_df.A,temp_df.B,temp_df.C,temp_df.D,temp_df.N)
-                temp_df['Information Gain'].replace(np.nan,0,inplace=True)
-        
-            ##get only computed columns
-            filtered_cols=['word list','word occurence count','Proportional Difference','Mutual Information','Chi Square','Information Gain']
-            for cols in filtered_cols[2:]:
-                if cols not in temp_df.columns:
-                    filtered_cols.remove(cols)
-            temp_df=temp_df[filtered_cols]
+                out_df['Information Gain']=self._InformationGain(A,B,C,D,N)
+                out_df['Information Gain'].replace(np.nan,0,inplace=True)
 
             ##assign to dict for master calculation
-            result_dict[calc_base_label]=temp_df
+            result_dict[calc_base_label]=out_df
         
         ####merge
         final_results_pd=pd.DataFrame()
@@ -201,7 +202,7 @@ Information gain:
         final_results_ig=pd.DataFrame()
         
         #final result
-        final_results=pd.DataFrame({'word list':temp_df['word list'],'word occurence count':temp_df['word occurence count']})
+        final_results=pd.DataFrame({'word list':out_df['word list'],'word occurence count':out_df['word occurence count']})
         
         for calc_base_label in list(set(self.target)):
             if 'PD' in self.metric_list:
@@ -282,13 +283,11 @@ Information gain:
             if len(self.target)!=len(self.input_doc_list):
                 print('Please provide target and input_doc_list of similar length.')
             else:
-                calc_df=pd.DataFrame({'target':self.target,'input_doc_list':self.input_doc_list})
-                unique_words=self._get_uniquewords()
                 if len(set(self.target))==2:
-                    values_df=self._getvalues_singleclass(unique_words,calc_df)
+                    values_df=self._getvalues_singleclass()
                     return values_df
                 elif len(set(self.target))>2:
-                    values_df=self._getvalues_multiclass(unique_words,calc_df)
+                    values_df=self._getvalues_multiclass()
                     return values_df
         else:
             print('Please provide target and input_doc_list both as list object.')
