@@ -206,7 +206,7 @@ Information gain:
         
         for calc_base_label in list(set(self.target)):
             if 'PD' in self.metric_list:
-                label_df_pd=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'PD_'+calc_base_label:result_dict[calc_base_label]['Proportional Difference']})
+                label_df_pd=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'PD_'+str(calc_base_label):result_dict[calc_base_label]['Proportional Difference']})
                 if final_results_pd.shape[0]:
                     final_results_pd=final_results_pd.merge(label_df_pd,on=['word list'])
                 else:
@@ -224,7 +224,7 @@ Information gain:
 
             
             if 'MI' in self.metric_list:
-                label_df_mi=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'MI_'+calc_base_label:result_dict[calc_base_label]['Mutual Information']})
+                label_df_mi=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'MI_'+str(calc_base_label):result_dict[calc_base_label]['Mutual Information']})
                 if final_results_mi.shape[0]:
                     final_results_mi=final_results_mi.merge(label_df_mi,on=['word list'])
                 else:
@@ -242,7 +242,7 @@ Information gain:
                     
 
             if 'CHI' in self.metric_list:
-                label_df_chi=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'CHI_'+calc_base_label:result_dict[calc_base_label]['Chi Square']})
+                label_df_chi=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'CHI_'+str(calc_base_label):result_dict[calc_base_label]['Chi Square']})
                 if final_results_chi.shape[0]:
                     final_results_chi=final_results_chi.merge(label_df_chi,on=['word list'])
                 else:
@@ -259,7 +259,7 @@ Information gain:
                         final_results=label_df_chi
 
             if 'IG' in self.metric_list:
-                label_df_ig=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'IG_'+calc_base_label:result_dict[calc_base_label]['Information Gain']})
+                label_df_ig=pd.DataFrame({'word list':result_dict[calc_base_label]['word list'],'IG_'+str(calc_base_label):result_dict[calc_base_label]['Information Gain']})
                 if final_results_ig.shape[0]:
                     final_results_ig=final_results_ig.merge(label_df_ig,on=['word list'])
                 else:
