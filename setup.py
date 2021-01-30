@@ -12,8 +12,8 @@ else:
 
 setup(
     name='TextFeatureSelection',
-    version='0.0.8',
-    description='Implementation of various algorithms for feature selection for text features, based on filter method',
+    version='0.0.11',
+    description='Python library for feature selection for text features. It has filter method and genetic algorithm for improving text classification models. Helps improve your machine learning models',
     long_description=long_description,
     long_description_content_type='text/markdown',  # This is important!
     author='StatguyUser',
