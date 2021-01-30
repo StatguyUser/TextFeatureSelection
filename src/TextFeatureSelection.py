@@ -564,15 +564,15 @@ class TextFeatureSelectionGA():
             ##gene pool 1
             gene_1 = population_matrix[index_run[0]]
             #cost of gene 1
-            cost1=self._computeFitness(gene=gene_1,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+            cost1=self._computeFitness(gene=gene_1,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
             ##gene pool 2
             gene_2 = population_matrix[index_run[1]]
             #cost of gene 2
-            cost2=self._computeFitness(gene=gene_2,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+            cost2=self._computeFitness(gene=gene_2,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
             ##gene pool 3
             gene_3 = population_matrix[index_run[2]]
             #cost of gene 3
-            cost3=self._computeFitness(gene=gene_3,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+            cost3=self._computeFitness(gene=gene_3,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
 
             #get best chromosome from 3 and assign best chromosome.
             if cost1==max(cost1,cost2,cost3):
