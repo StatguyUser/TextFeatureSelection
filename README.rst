@@ -64,7 +64,7 @@ a) Genetic algorithm parameters: These are provided during object initialization
 b) Machine learning model and tfidf parameters: These are provided during function call.
 
   Data Parameters
-  ----------        
+
   - **doc_list** text documents in a python list. 
             Example: ['i had dinner','i am on vacation','I am happy','Wastage of time']
         
@@ -73,7 +73,7 @@ b) Machine learning model and tfidf parameters: These are provided during functi
         
         
   Modelling Parameters
-  ----------
+
   - **model** Set a model which has .fit function to train model and .predict function to predict for test data. 
             This model should also be able to train classifier using TfidfVectorizer feature.
             Default is set as Logistic regression in sklearn
@@ -86,7 +86,7 @@ b) Machine learning model and tfidf parameters: These are provided during functi
         
         
   TfidfVectorizer Parameters
-  ----------
+
   - **analyzer** {'word', 'char', 'char_wb'} or callable, default='word'
             Whether the feature should be made of word or character n-grams.
             Option 'char_wb' creates character n-grams only from text inside
@@ -117,8 +117,7 @@ b) Machine learning model and tfidf parameters: These are provided during functi
 
             If a list, that list is assumed to contain stop words, all of which
             will be removed from the resulting tokens.
-            Only applies if ``analyzer == 'word'``.
-
+            Only applies if analyzer == 'word'.
             If None, no stop words will be used. max_df can be set to a value
             in the range [0.7, 1.0) to automatically detect and filter stop
             words based on intra corpus document frequency of terms.
@@ -126,11 +125,11 @@ b) Machine learning model and tfidf parameters: These are provided during functi
   - **tokenizer** callable, default=None
             Override the string tokenization step while preserving the
             preprocessing and n-grams generation steps.
-            Only applies if ``analyzer == 'word'``
+            Only applies if analyzer == 'word'
 
   - **token_pattern** str, default=r"(?u)\\b\\w\\w+\\b"
             Regular expression denoting what constitutes a "token", only used
-            if ``analyzer == 'word'``. The default regexp selects tokens of 2
+            if analyzer == 'word'. The default regexp selects tokens of 2
             or more alphanumeric characters (punctuation is completely ignored
             and always treated as a token separator).
 
