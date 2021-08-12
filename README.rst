@@ -154,6 +154,116 @@ best_vocabulary=getGAobj.getGeneticFeatures(doc_list=doc_list,label_list=label_l
 ```
 
 
+Third method: TextFeatureSelectionEnsemble
+=================
+TextFeatureSelectionEnsemble helps ensemble multiple models to find best model combination with highest performance.
+
+It uses grid search and document frequency for reducing vector size for individual models. This makes individual models less complex and computationally faster. At the ensemble learning layer, genetic algorithm is used for identifying the smallest possible combination of individual models which has the highest impact on ensemble model performance.
+
+    Base Model Parameters
+
+    
+  - **doc_list** Python list with text documents for training base models
+    
+    
+  - **label_list** Python list with Y labels
+
+    
+  - **pickle_path** Path where base model, text feature vectors and ensemble models will be saved in PC.
+    
+    
+  - **n_crossvalidation** How many cross validation samples to be created. Higher value will result more time for model training. Lower number will result in less reliable model. Default is 5.
+    
+    
+  - **seed_num** Seed number for training base models as well as for creating cross validation data. Default is 1.
+    
+    
+  - **stop_words** Stop words for count and tfidf vectors. Default is None.
+    
+    
+  - **lowercase** Lowercasing for text in count and tfidf vector. Default is True
+    
+    
+  - **n_jobs** How many jobs to be run in parallel for training sklearn and xgboost models. Default is -1
+    
+    
+  - **cost_function** Cost function to optimize base models. During feature selection using grid search for base models, this cost function is used for identifying which words to be removed based on combination of lower and higer document frequency for words.
+                    Available options are 'f1', 'precision', 'recall'. Default is 'f1'
+    
+    
+  - **average** What averaging to be used for cost_function. Useful for multi-class classifications.
+              Available options are 'micro','macro','samples','weighted' and 'binary'
+              Default is 'binary'.
+    
+    
+  - **basemodel_nestimators** How many n_estimators. Used as a parameter for tree based models such as 'XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier'.
+                            Default is 500.
+
+    
+  - **feature_list** Type of features to be used for ensembling. Available options are 'Unigram','Bigram','Trigram'.
+                   Default is ['Unigram','Bigram','Trigram']
+    
+    
+  - **vector_list** Type of text vectors from sklearn to be used. Available options are 'CountVectorizer','TfidfVectorizer'.
+                  Default is ['CountVectorizer','TfidfVectorizer']
+    
+    
+  - **base_model_list** List of machine learning algorithms to be trained as base models for ensemble layer training.
+                      Available options are 'LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'
+                      Default is ['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier']
+    
+    
+    Genetic algorithm feature selection parameters for ensemble model
+    
+  - **GAparameters** Parameters for genetic algorithm feature selection for ensemble learning. This is used for identifying best combination of base models for ensemble learning.
+                   
+                   It helps remove models which has no contribution for ensemble learning and keep only important models.
+                   
+                   GeneticAlgorithmFS module is used from EvolutionaryFS python library.
+                   Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
+                   Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
+    
+    
+    Output are saved in 4 folders
+
+    
+  - **model** It has base models
+    
+  - **vector** it has count and tfidf vectors for each model
+    
+  - **ensemble_model** It has ensemble model
+    
+  - **deleted** It has base model and vectors for models which were discarded by genetic algorithm.
+    
+    Apart from above 4, it also saves and return list of columns which are used in ensemble layer with name best_ensemble_columns
+    These columns are used in the exact same order for feature matrix in ensemble layer.
+
+
+How to use is it?
+=================
+
+```python
+
+# import csv from location: 'https://www.kaggle.com/azimulh/tweets-data-for-authorship-attribution-modelling?select=tweet_with_authors.csv'
+dat_train_pre=pd.read_csv('/home/user/tweet_with_authors.csv')
+le = LabelEncoder()
+dat_train_pre['labels'] = le.fit_transform(dat_train_pre['author'].values)
+
+# keep only limited set of authors
+dat_train_pre=dat_train_pre[dat_train_pre.author.isin(['Neil deGrasse Tyson', 'Ellen DeGeneres', 'Sebastian Ruder','KATY PERRY', 'Kim Kardashian West', 'Elon Musk', 'Barack Obama','Cristiano Ronaldo'])]
+dat_train_pre.reset_index(inplace=True,drop=True)
+
+# convert text raw text and labels to python list
+doc_list=dat_train_pre['tweet'].tolist()
+label_list=dat_train_pre['labels'].tolist()
+
+# Initialize parameter for TextFeatureSelectionEnsemble and start training
+gaObj=TextFeatureSelectionEnsemble(doc_list,label_list,n_crossvalidation=2,pickle_path='/home/user/folder/',average='micro',base_model_list=['LogisticRegression','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'])
+best_columns=gaObj.doTFSE()
+
+```
+
+
 Where to get it?
 ================
 
@@ -167,6 +277,12 @@ Dependencies
  - [pandas](https://pandas.pydata.org/)
 
  - [scikit-learn](https://scikit-learn.org/stable/)
+
+ - [xgboost](https://xgboost.readthedocs.io/en/latest/)
+
+ - [nltk](https://www.nltk.org/)
+
+ - [EvolutionaryFS](https://pypi.org/project/EvolutionaryFS/)
 
  - [collections](https://docs.python.org/2/library/collections.html)
 
