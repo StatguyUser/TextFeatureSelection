@@ -1284,7 +1284,6 @@ class TextFeatureSelectionEnsemble:
     def _deleteModels(self,master_list):
         for model in os.listdir(self.pickle_path+'model/'):
             if '_'.join(model.split(".")[0].split("_")[1:]) not in master_list:
-                print(model)
                 os.rename(self.pickle_path+'model/'+model, self.pickle_path+'deleted/model/'+model)
                 os.rename(self.pickle_path+'vector/'+model, self.pickle_path+'deleted/vector/'+model)
     
