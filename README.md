@@ -147,7 +147,6 @@ TextFeatureSelectionEnsemble helps ensemble multiple models to find best model c
 It uses grid search and document frequency for reducing vector size for individual models. This makes individual models less complex and computationally faster. At the ensemble learning layer, genetic algorithm is used for identifying the smallest possible combination of individual models which has the highest impact on ensemble model performance.
 
 Base Model Parameters
-    Base Model Parameters
 
     
   - **doc_list** Python list with text documents for training base models
@@ -206,6 +205,7 @@ Genetic algorithm feature selection parameters for ensemble model
   It helps remove models which has no contribution for ensemble learning and keep only important models.
   GeneticAlgorithmFS module is used from EvolutionaryFS python library.
   Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
+  
   Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
     
     

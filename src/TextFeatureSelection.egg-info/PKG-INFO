@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: TextFeatureSelection
-Version: 0.0.13
+Version: 0.0.14
 Summary: Python library for feature selection for text features. It has filter method, genetic algorithm and TextFeatureSelectionEnsemble for improving text classification models. Helps improve your machine learning models
 Home-page: https://github.com/StatguyUser/TextFeatureSelection
 Author: StatguyUser
@@ -229,6 +229,7 @@ Description: What is it?
           It helps remove models which has no contribution for ensemble learning and keep only important models.
           GeneticAlgorithmFS module is used from EvolutionaryFS python library.
           Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
+        
           Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
             
             
