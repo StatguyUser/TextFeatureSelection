@@ -1,7 +1,7 @@
 # What is it?
 TextFeatureSelection is a Python library which helps improve text classification models through feature selection. It has 2 methods `TextFeatureSelection` and `TextFeatureSelectionGA` methods respectively.
 
-**First method: TextFeatureSelection**
+# First method: TextFeatureSelection
 It follows the `filter` method for feature selection. It provides a score for each word token. We can set a threshold for the score to decide which words to be included. There are 4 algorithms in this method, as follows.
 
   - **Chi-square** It measures the lack of independence between term(t) and class(c). It has a natural value of zero if t and c are independent. If it is higher, then term is dependent. It is not reliable for low-frequency terms 
@@ -37,7 +37,7 @@ print(result_df)
 
 ```
 
-**Second method: TextFeatureSelectionGA**
+# Second method: TextFeatureSelectionGA
 It follows the `genetic algorithm` method. This is a population based metaheuristics search algorithm. It returns the optimal set of word tokens which give the best possible model score.
 
 Its parameters are divided into 2 groups.
@@ -140,7 +140,8 @@ getGAobj=TextFeatureSelectionGA(percentage_of_token=60)
 best_vocabulary=getGAobj.getGeneticFeatures(doc_list=doc_list,label_list=label_list)
 ```
 
-**Third method: TextFeatureSelectionEnsemble**
+# Third method: TextFeatureSelectionEnsemble
+
 TextFeatureSelectionEnsemble helps ensemble multiple models to find best model combination with highest performance.
 
 It uses grid search and document frequency for reducing vector size for individual models. This makes individual models less complex and computationally faster. At the ensemble learning layer, genetic algorithm is used for identifying the smallest possible combination of individual models which has the highest impact on ensemble model performance.
@@ -174,43 +175,41 @@ Base Model Parameters
     
     
   - **cost_function** Cost function to optimize base models. During feature selection using grid search for base models, this cost function is used for identifying which words to be removed based on combination of lower and higer document frequency for words.
-                    Available options are 'f1', 'precision', 'recall'. Default is 'f1'
+  Available options are 'f1', 'precision', 'recall'. Default is 'f1'
     
     
   - **average** What averaging to be used for cost_function. Useful for multi-class classifications.
-              Available options are 'micro','macro','samples','weighted' and 'binary'
-              Default is 'binary'.
+  Available options are 'micro','macro','samples','weighted' and 'binary'
+  Default is 'binary'.
     
     
   - **basemodel_nestimators** How many n_estimators. Used as a parameter for tree based models such as 'XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier'.
-                            Default is 500.
+  Default is 500.
 
     
   - **feature_list** Type of features to be used for ensembling. Available options are 'Unigram','Bigram','Trigram'.
-                   Default is ['Unigram','Bigram','Trigram']
+  Default is ['Unigram','Bigram','Trigram']
     
     
   - **vector_list** Type of text vectors from sklearn to be used. Available options are 'CountVectorizer','TfidfVectorizer'.
-                  Default is ['CountVectorizer','TfidfVectorizer']
+  Default is ['CountVectorizer','TfidfVectorizer']
     
     
   - **base_model_list** List of machine learning algorithms to be trained as base models for ensemble layer training.
-                      Available options are 'LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'
-                      Default is ['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier']
+  Available options are 'LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'
+  Default is ['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier']
     
-    
-    Genetic algorithm feature selection parameters for ensemble model
+  
+Genetic algorithm feature selection parameters for ensemble model
     
   - **GAparameters** Parameters for genetic algorithm feature selection for ensemble learning. This is used for identifying best combination of base models for ensemble learning.
-                   
-                   It helps remove models which has no contribution for ensemble learning and keep only important models.
-                   
-                   GeneticAlgorithmFS module is used from EvolutionaryFS python library.
-                   Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
-                   Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
+  It helps remove models which has no contribution for ensemble learning and keep only important models.
+  GeneticAlgorithmFS module is used from EvolutionaryFS python library.
+  Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
+  Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
     
     
-    Output are saved in 4 folders
+  Output are saved in 4 folders
 
     
   - **model** It has base models
