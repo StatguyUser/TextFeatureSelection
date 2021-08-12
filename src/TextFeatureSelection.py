@@ -5,22 +5,46 @@
 # Author: Md Azimul Haque <github.com/StatguyUser>
 # License: BSD 3 clause
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import f1_score,auc,precision_score,recall_score
+from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score,precision_score,recall_score,accuracy_score
+from sklearn.preprocessing import LabelEncoder
+
 from sklearn.model_selection import StratifiedKFold
+
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from xgboost import XGBClassifier
+
+from EvolutionaryFS import GeneticAlgorithmFS
+
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.util import ngrams
 
 import pandas as pd
 import numpy as np
+
+import warnings
 from collections import Counter
 import random as rd
 import time
 import gc
-import warnings
+import pickle
+import sys
+import os
+import re
 
 warnings.filterwarnings('ignore')
 rd.seed(1)
+
+if not sys.warnoptions:    
+    warnings.simplefilter("ignore")
+    os.environ["PYTHONWARNINGS"] = 'ignore'
+
+np.random.seed(20)
+
 
 
 class TextFeatureSelection():
@@ -849,6 +873,496 @@ class TextFeatureSelectionGA():
 
         best_vocabulary=list(np.array(unique_words)[list(map(bool,best_chromosome))])
         return best_vocabulary    
+
+
+class TextFeatureSelectionEnsemble:
+    '''
+    Base Model Parameters
+    ----------
+    
+    doc_list : Python list with text documents for training base models
+    
+    
+    label_list : Python list with Y labels
+
+    
+    pickle_path : Path where base model, text feature vectors and ensemble models will be saved in PC.
+    
+    
+    n_crossvalidation : How many cross validation samples to be created. Higher value will result more time for model training. Lower number will result in less reliable model. Default is 5.
+    
+    
+    seed_num : Seed number for training base models as well as for creating cross validation data. Default is 1.
+    
+    
+    stop_words : Stop words for count and tfidf vectors. Default is None.
+    
+    
+    lowercase : Lowercasing for text in count and tfidf vector. Default is True
+    
+    
+    n_jobs : How many jobs to be run in parallel for training sklearn and xgboost models. Default is -1
+    
+    
+    cost_function : Cost function to optimize base models. During feature selection using grid search for base models, this cost function is used for identifying which words to be removed based on combination of lower and higer document frequency for words.
+                    Available options are 'f1', 'precision', 'recall'. Default is 'f1'
+    
+    
+    average : What averaging to be used for cost_function. Useful for multi-class classifications.
+              Available options are 'micro','macro','samples','weighted' and 'binary'
+              Default is 'binary'.
+    
+    
+    basemodel_nestimators : How many n_estimators. Used as a parameter for tree based models such as 'XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier'.
+                            Default is 500.
+
+    
+    feature_list : Type of features to be used for ensembling. Available options are 'Unigram','Bigram','Trigram'.
+                   Default is ['Unigram','Bigram','Trigram']
+    
+    
+    vector_list : Type of text vectors from sklearn to be used. Available options are 'CountVectorizer','TfidfVectorizer'.
+                  Default is ['CountVectorizer','TfidfVectorizer']
+    
+    
+    base_model_list : List of machine learning algorithms to be trained as base models for ensemble layer training.
+                      Available options are 'LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'
+                      Default is ['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier']
+    
+    
+    Genetic algorithm feature selection parameters for ensemble model
+    ----------
+    GAparameters : Parameters for genetic algorithm feature selection for ensemble learning. This is used for identifying best combination of base models for ensemble learning.
+                   
+                   It helps remove models which has no contribution for ensemble learning and keep only important models.
+                   
+                   GeneticAlgorithmFS module is used from EvolutionaryFS python library.
+                   Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
+                   Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
+    
+    
+    Output are saved in 4 folders
+    ----------
+    
+    model : It has base models
+    
+    vector : it has count and tfidf vectors for each model
+    
+    ensemble_model : It has ensemble model
+    
+    deleted : It has base model and vectors for models which were discarded by genetic algorithm.
+    
+    Apart from above 4, it also saves and return list of columns which are used in ensemble layer with name best_ensemble_columns
+    These columns are used in the exact same order for feature matrix in ensemble layer.
+    
+    '''
+
+    def __init__(self,doc_list,label_list,pickle_path=None,n_crossvalidation=5,seed_num=1,stop_words=None,lowercase=True,n_jobs=-1,cost_function='f1',average='binary',basemodel_nestimators=500,feature_list=['Unigram','Bigram','Trigram'],vector_list=['CountVectorizer','TfidfVectorizer'],base_model_list=['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'],GAparameters={"model_object":LogisticRegression(n_jobs=-1,random_state=1),"cost_function":f1_score,"average":'micro',"cost_function_improvement":'increase',"generations":20,"population":30,"prob_crossover":0.9,"prob_mutation":0.1,"run_time":60000}):
+        self.doc_list=doc_list
+        self.label_list=label_list
+        self.pickle_path=pickle_path
+        self.n_crossvalidation=n_crossvalidation
+        self.seed_num=seed_num
+        self.stop_words=stop_words
+        self.lowercase=lowercase
+        self.n_jobs=n_jobs
+        self.cost_function=cost_function
+        self.average=average
+        self.basemodel_nestimators=basemodel_nestimators
+        self.feature_list=feature_list
+        self.vector_list=vector_list
+        self.base_model_list=base_model_list
+        self.GAparameters=GAparameters
+        
+    def _get_ngrams(self,text, n ):
+        n_grams = ngrams(word_tokenize(text), n)
+        n_grams_concat = [ '_'.join(grams) for grams in n_grams]
+        
+        return ' '.join(n_grams_concat)
+
+
+    def _createBiTriGram(self):
+        
+        doc_list_bigram=[]
+        doc_list_trigram=[]
+        
+        for doc in self.doc_list:
+            doc_get_bigram=''
+            doc_get_trigram=''
+            for sent in sent_tokenize(doc):
+                doc_get_bigram+=self._get_ngrams(sent, 2)
+                doc_get_trigram+=self._get_ngrams(sent, 3)
+            doc_list_bigram.append(doc_get_bigram)
+            doc_list_trigram.append(doc_get_trigram)
+        return doc_list_bigram,doc_list_trigram
+    
+    def _getData(self):
+        
+        #create bi and tri gram
+        doc_list_bigram,doc_list_trigram=self._createBiTriGram()
+        
+        data_dict={}
+        for i in range(self.n_crossvalidation):
+            temp_dict={}
+            
+            unigram_list_1,unigram_list_test,bigram_list_1,bigram_list_test,trigram_list_1,trigram_list_test,label_list_1,label_list_test=train_test_split(self.doc_list,doc_list_bigram,doc_list_trigram,self.label_list,stratify=self.label_list,test_size=0.20,random_state=i*20)
+            ## 15% in main :17.5% in second sample
+            ## 20% in main :25% in second sample
+            ## 10% in main: 12.5%
+            unigram_list_train,unigram_list_metaTrain,bigram_list_train,bigram_list_metaTrain,trigram_list_train,trigram_list_metaTrain,label_list_train,label_list_metaTrain=train_test_split(unigram_list_1,bigram_list_1,trigram_list_1,label_list_1,stratify=label_list_1,test_size=0.25,random_state=i*20)
+            
+            temp_dict['Unigram_train']=unigram_list_train
+            temp_dict['Unigram_metaTrain']=unigram_list_metaTrain
+            temp_dict['Unigram_test']=unigram_list_test
+            temp_dict['label_train']=label_list_train
+            temp_dict['label_metaTrain']=label_list_metaTrain
+            temp_dict['label_test']=label_list_test
+            
+            temp_dict['Bigram_train']=bigram_list_train
+            temp_dict['Bigram_metaTrain']=bigram_list_metaTrain
+            temp_dict['Bigram_test']=bigram_list_test
+
+            temp_dict['Trigram_train']=trigram_list_train
+            temp_dict['Trigram_metaTrain']=trigram_list_metaTrain
+            temp_dict['Trigram_test']=trigram_list_test
+            
+            #assign
+            data_dict[i]=temp_dict
+
+        return data_dict
+
+    def _cost_function_value(self,y_test,y_test_pred):
+        if len(y_test_pred.shape)==2:
+            y_test_pred=y_test_pred.ravel()
+        if self.cost_function == 'f1':
+
+            if self.average == 'micro':
+                metric=f1_score(y_test,y_test_pred,average='micro')
+            if self.average == 'macro':
+                metric=f1_score(y_test,y_test_pred,average='macro')
+            if self.average == 'samples':
+                metric=f1_score(y_test,y_test_pred,average='samples')
+            if self.average == 'weighted':
+                metric=f1_score(y_test,y_test_pred,average='weighted')
+            if self.average == 'binary':
+                metric=f1_score(y_test,y_test_pred,average='binary')
+
+        elif self.cost_function == 'precision':
+            if self.average == 'micro':
+                metric=precision_score(y_test,y_test_pred,average='micro')
+            if self.average == 'macro':
+                metric=precision_score(y_test,y_test_pred,average='macro')
+            if self.average == 'samples':
+                metric=precision_score(y_test,y_test_pred,average='samples')
+            if self.average == 'weighted':
+                metric=precision_score(y_test,y_test_pred,average='weighted')
+            if self.average == 'binary':
+                metric=precision_score(y_test,y_test_pred,average='binary')
+
+        elif self.cost_function == 'recall':
+            if self.average == 'micro':
+                metric=recall_score(y_test,y_test_pred,average='micro')
+            if self.average == 'macro':
+                metric=recall_score(y_test,y_test_pred,average='macro')
+            if self.average == 'samples':
+                metric=recall_score(y_test,y_test_pred,average='samples')
+            if self.average == 'weighted':
+                metric=recall_score(y_test,y_test_pred,average='weighted')
+            if self.average == 'binary':
+                metric=recall_score(y_test,y_test_pred,average='binary')
+
+        elif self.cost_function == 'accuracy':
+            metric=accuracy_score(y_test,y_test_pred)
+
+        return metric
+
+    def _getTrainMetaTest(self,featureName,data_dict_fold):
+        
+        ngram_train=data_dict_fold[str(featureName)+'_train']
+        ngram_metaTrain=data_dict_fold[str(featureName)+'_metaTrain']
+        ngram_test=data_dict_fold[str(featureName)+'_test']
+        
+        return ngram_train,ngram_metaTrain,ngram_test
+        
+    def _getBaseModel(self,model_name):
+        if model_name=='AdaBoostClassifier':
+            model=AdaBoostClassifier(random_state=self.seed_num,n_estimators=self.basemodel_nestimators)
+        elif model_name=='XGBClassifier':
+            model=XGBClassifier(n_jobs=self.n_jobs,random_state=self.seed_num,verbosity=0,n_estimators=self.basemodel_nestimators)
+        elif model_name=='RandomForestClassifier':
+            model=RandomForestClassifier(n_jobs=self.n_jobs,random_state=self.seed_num,n_estimators=self.basemodel_nestimators)
+        elif model_name=='ExtraTreesClassifier':
+            model=ExtraTreesClassifier(n_jobs=self.n_jobs,random_state=self.seed_num,n_estimators=self.basemodel_nestimators)
+        elif model_name=='KNeighborsClassifier':
+            model=KNeighborsClassifier(n_jobs=self.n_jobs,n_neighbors=5)
+        elif model_name=='LogisticRegression':                
+            model=LogisticRegression(n_jobs=self.n_jobs,random_state=self.seed_num)
+        return model       
+    
+    def _doMaxdfMindfGridSearch(self,data_dict,model_combo,metaFeatures,minmaxValueDF):
+
+        mindf_list=[0,1,2,3,4]#,5]
+        maxdf_list=[0,0.5,0.65,0.70,0.75,0.80,0.85]#,0.89,0.90]#,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98]
+        
+        vector_type=model_combo.split('_')[2]
+        model_name=model_combo.split('_')[0]
+        
+        base_cost=0
+        ##find best value
+        maxmindf_cost=[]
+        maxdf_finallist=[]
+        mindf_finallist=[]
+        for maxdf in maxdf_list:
+            for mindf in mindf_list:
+                if (maxdf==0 and mindf!=0) or (maxdf!=0 and mindf==0):
+                    pass
+                else:
+                    maxmindf_fold_cost=[]
+                    for fold in data_dict.keys():                    
+                        label_train=data_dict[fold]['label_train']
+                        label_metaTrain=data_dict[fold]['label_metaTrain']
+                        label_test=data_dict[fold]['label_test']
+        
+                        ngram_train,ngram_metaTrain,ngram_test=self._getTrainMetaTest(featureName=model_combo.split('_')[1],data_dict_fold=data_dict[fold])
+    
+                        if vector_type=='CountVectorizer':
+                            if maxdf==0 and mindf==0:
+                                Countvector=CountVectorizer(stop_words=self.stop_words,lowercase=self.lowercase)
+                            else:
+                                Countvector=CountVectorizer(max_df=maxdf,min_df=mindf,stop_words=self.stop_words,lowercase=self.lowercase)
+                            Countvector.fit(ngram_train)                            
+                            Train_vector=Countvector.transform(ngram_train)
+                            test_vector=Countvector.transform(ngram_test)
+                            
+                        elif vector_type=='TfidfVectorizer':
+                            if maxdf==0 and mindf==0:
+                                Tfidfvector=TfidfVectorizer(stop_words=self.stop_words,lowercase=self.lowercase)
+                            else:
+                                Tfidfvector=TfidfVectorizer(max_df=maxdf,min_df=mindf,stop_words=self.stop_words,lowercase=self.lowercase)
+                            Tfidfvector.fit(ngram_train)
+                            Train_vector=Tfidfvector.transform(ngram_train)
+                            test_vector=Tfidfvector.transform(ngram_test)
+                    
+                        #get model
+                        model=self._getBaseModel(model_name=model_name)
+                        ##train model
+                        model.fit(Train_vector,label_train)
+                        label_test_predict=model.predict(test_vector)
+                        
+                        test_cost=self._cost_function_value(label_test,label_test_predict)
+                                                
+                        maxmindf_fold_cost.append(test_cost)
+                    
+                    #print('maxmindf_fold_cost',maxmindf_fold_cost,'mean:',np.mean(maxmindf_fold_cost))
+                    maxmindf_cost.append(np.mean(maxmindf_fold_cost))
+                    maxdf_finallist.append(maxdf)
+                    mindf_finallist.append(mindf)
+                    #print('maxdf:',maxdf,'mindf:',mindf,'maxmindf_cost mean:',np.mean(maxmindf_fold_cost),'maxmindf_cost:',maxmindf_cost)
+        
+        performance_df=pd.DataFrame({'maxdf':maxdf_finallist,'mindf':mindf_finallist,'cost':maxmindf_cost})
+        
+        performance_df.sort_values(by=['cost','mindf'],inplace=True,ascending=False)
+        performance_df.reset_index(inplace=True,drop=True)
+        
+        
+        best_maxdf=performance_df['maxdf'].tolist()[0]
+        best_mindf=performance_df['mindf'].tolist()[0]
+        best_cost=performance_df['cost'].tolist()[0]
+        
+        base_cost+=performance_df[(performance_df['maxdf']==0) & (performance_df['mindf']==0)]['cost'].tolist()[0]
+        
+        minmaxValueDF['model_combo'].append(model_combo)
+        minmaxValueDF['min_df'].append(best_mindf)
+        minmaxValueDF['max_df'].append(best_maxdf)
+        
+        
+        ##generate meta features
+        for fold in data_dict.keys():                    
+            label_train=data_dict[fold]['label_train']
+            label_metaTrain=data_dict[fold]['label_metaTrain']
+            label_test=data_dict[fold]['label_test']
+
+            ngram_train,ngram_metaTrain,ngram_test=self._getTrainMetaTest(featureName=model_combo.split('_')[1],data_dict_fold=data_dict[fold])
+        
+            if vector_type=='CountVectorizer':
+                if best_maxdf==0 and best_mindf==0:
+                    vector=CountVectorizer(stop_words=self.stop_words,lowercase=self.lowercase)
+                else:
+                    vector=CountVectorizer(max_df=best_maxdf,min_df=best_mindf,stop_words=self.stop_words,lowercase=self.lowercase)
+                vector.fit(ngram_train)
+                
+#                Train_vector=vector.transform(ngram_train)
+#                metaTrain_vector=vector.transform(ngram_metaTrain)
+#                test_vector=vector.transform(ngram_test)
+                
+            elif vector_type=='TfidfVectorizer':
+                if best_maxdf==0 and best_mindf==0:
+                    vector=TfidfVectorizer(stop_words=self.stop_words,lowercase=self.lowercase)
+                else:
+                    vector=TfidfVectorizer(max_df=best_maxdf,min_df=best_mindf,stop_words=self.stop_words,lowercase=self.lowercase)
+                vector.fit(ngram_train)
+
+            if len(self.pickle_path)>0:
+                with open(self.pickle_path+'vector/crossvalidation'+str(fold+1)+'_'+str(model_combo)+'.pickle', 'wb') as handle:
+                    pickle.dump(vector, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+            Train_vector=vector.transform(ngram_train)
+            metaTrain_vector=vector.transform(ngram_metaTrain)
+            test_vector=vector.transform(ngram_test)
+        
+            #get model
+            model=self._getBaseModel(model_name=model_name)            
+            ##train model
+            model.fit(Train_vector,label_train)
+            label_metaTrain_predict_final=model.predict_proba(metaTrain_vector)
+            label_test_predict_final=model.predict_proba(test_vector)
+            
+            ##pickle model with range index+1; picke vector with name
+            if len(self.pickle_path)>0:
+                with open(self.pickle_path+'model/crossvalidation'+str(fold+1)+'_'+str(model_combo)+'.pickle', 'wb') as handle:
+                    pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
+            ##assign values in meta dictionary
+            for proba_col_train in range(label_metaTrain_predict_final.shape[1]):
+                metaFeatures[fold]['x_train'][str(model_combo)+str(proba_col_train)]=label_metaTrain_predict_final[:,proba_col_train]
+                metaFeatures[fold]['x_test'][str(model_combo)+str(proba_col_train)]=label_test_predict_final[:,proba_col_train]
+
+            ##if first combo, assign Y
+            if 'y_train' not in metaFeatures[fold].keys():
+                #assign
+                metaFeatures[fold]['y_train']=label_metaTrain
+            elif 'y_train' in metaFeatures[fold].keys():
+                if len(metaFeatures[fold]['y_train'])!=len(label_metaTrain):
+                    metaFeatures[fold]['y_train']=label_metaTrain
+                    
+            if 'y_test' not in metaFeatures[fold].keys():
+                #assign
+                metaFeatures[fold]['y_test']=label_test
+            elif 'y_test' in metaFeatures[fold].keys():
+                if len(metaFeatures[fold]['y_test'])!=len(label_test):
+                    metaFeatures[fold]['y_test']=label_test
+                
+
+        print('Meta feature generated for',model_combo.split('_')[0],',',model_combo.split('_')[1],'and',model_combo.split('_')[2],'vector. min_df:',best_mindf,'max_df:',best_maxdf,'cost:',round(best_cost,4),', base cost:',round(base_cost,4))
+            
+        return minmaxValueDF,metaFeatures
+
+
+
+    def _getBaseColumns(self):
+        
+        models_list=[base +'_'+ feature +'_'+ vector for base in self.base_model_list for feature in self.feature_list for vector in self.vector_list]
+        
+        #decide which combinatioon of models to be built
+        data_dict=self._getData()
+        
+        metaFeatures={}
+        for i in range(self.n_crossvalidation):
+            metaFeatures[i]={'x_train':pd.DataFrame(),'y_train':[],'x_test':pd.DataFrame(),'y_test':[]}
+        
+        minmaxValueDF={'model_combo':[],
+                       'min_df':[],
+                       'max_df':[]}
+        
+        for model_combo in models_list:
+            print('==================== Model started:',model_combo.split('_')[0],'model,',model_combo.split('_')[1],'feature with',model_combo.split('_')[2])
+            minmaxValueDF,metaFeatures=self._doMaxdfMindfGridSearch(data_dict=data_dict,model_combo=model_combo,metaFeatures=metaFeatures,minmaxValueDF=minmaxValueDF)
+                
+        return minmaxValueDF,metaFeatures
+
+    def _getCommonColumns(self,metaFeatures):
+        column_list=[]
+        intermediate_columns=[]
+        for key_value in metaFeatures.keys():
+            if not column_list:
+                column_list=list(set(metaFeatures[key_value]['x_train'].columns).intersection(set(metaFeatures[key_value]['x_test'].columns)))                
+            else:
+                intermediate_columns=list(set(metaFeatures[key_value]['x_train'].columns).intersection(set(metaFeatures[key_value]['x_test'].columns)))
+                column_list=list(set(column_list).intersection(set(intermediate_columns)))
+        return column_list
+        
+    def _deleteModels(self,master_list):
+        for model in os.listdir(self.pickle_path+'model/'):
+            if '_'.join(model.split(".")[0].split("_")[1:]) not in master_list:
+                print(model)
+                os.rename(self.pickle_path+'model/'+model, self.pickle_path+'deleted/model/'+model)
+                os.rename(self.pickle_path+'vector/'+model, self.pickle_path+'deleted/vector/'+model)
+    
+    def _getModelNames(self,best_ensemble_columns):
+        best_base_models=[]
+        for model in best_ensemble_columns:
+            model_text=re.sub('[^a-zA-Z_]+', '', model)
+            if model_text not in best_base_models:
+                best_base_models.append(model_text)
+
+        
+        return best_base_models
+        
+    def _trainSaveEnsemble(self,metaFeatures,best_ensemble_columns):
+        for data_keys in metaFeatures.keys():
+            ensemble_model=self.GAparameters['model_object']
+            ensemble_model.fit(metaFeatures[data_keys]['x_train'][best_ensemble_columns],metaFeatures[data_keys]['y_train'])
+            if len(self.pickle_path)>0:
+                with open(self.pickle_path+'ensemble_model//crossvalidation'+str(data_keys+1)+'_ensemble_model.pickle', 'wb') as handle:
+                    pickle.dump(ensemble_model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    
+    def doTFSE(self):
+
+        print('Feature generation for ensemble learning started!')
+        
+        if len(self.pickle_path)>0:
+            os.makedirs(self.pickle_path+'model', exist_ok=True)
+            os.makedirs(self.pickle_path+'vector', exist_ok=True)
+            os.makedirs(self.pickle_path+'ensemble_model', exist_ok=True)
+            os.makedirs(self.pickle_path+'deleted/model', exist_ok=True)
+            os.makedirs(self.pickle_path+'deleted/vector', exist_ok=True)
+            
+        
+        minmaxValueDF,metaFeatures=self._getBaseColumns()
+        columns_list=self._getCommonColumns(metaFeatures)
+        
+#        if len(self.pickle_path)>0:
+#            with open(self.pickle_path+'//metaFeatures_gridSearch.pickle', 'wb') as handle:
+#                pickle.dump(metaFeatures, handle, protocol=pickle.HIGHEST_PROTOCOL)
+#                
+#        if len(self.pickle_path)>0:
+#            with open(self.pickle_path+'//columns_list.pickle', 'wb') as handle:
+#                pickle.dump(columns_list, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
+
+
+        print('Ensembling started using all base models and genetic algorithm')
+        
+        evoObj=GeneticAlgorithmFS(model=self.GAparameters['model_object'],
+                           data_dict=metaFeatures,
+                           cost_function=self.GAparameters['cost_function'],
+                           average=self.GAparameters['average'],
+                           cost_function_improvement=self.GAparameters['cost_function_improvement'],
+                           columns_list=columns_list,
+                           generations=self.GAparameters['generations'],
+                           population=self.GAparameters['population'],
+                           prob_crossover=self.GAparameters['prob_crossover'],
+                           prob_mutation=self.GAparameters['prob_mutation'],
+                           run_time=self.GAparameters['run_time'])
+        
+        best_ensemble_columns=evoObj.GetBestFeatures()
+        if len(self.pickle_path)>0:
+            with open(self.pickle_path+'//best_ensemble_columns.pickle', 'wb') as handle:
+                pickle.dump(best_ensemble_columns, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        
+        best_base_models=self._getModelNames(best_ensemble_columns)
+        
+        ## train and save ensemble
+        self._trainSaveEnsemble(metaFeatures,best_ensemble_columns)
+        
+        ## delete non-ensemble models
+        self._deleteModels(best_base_models)
+        
+        return best_ensemble_columns
+
+
             
 if __name__=="__main__":
     #Multiclass classification problem
@@ -866,4 +1380,24 @@ if __name__=="__main__":
     result_df=fsOBJ.getScore()
 
     print(result_df)
+    
+    ### ----------------------------------------------------------------------------------------------------------------------------------------------------------- ###
+    # usage of TextFeatureSelectionEnsemble
+    # import csv from location: 'https://www.kaggle.com/azimulh/tweets-data-for-authorship-attribution-modelling?select=tweet_with_authors.csv'
+    dat_train_pre=pd.read_csv('/home/user/GDrive/tweet_with_authors.csv')
+    le = LabelEncoder()
+    dat_train_pre['labels'] = le.fit_transform(dat_train_pre['author'].values)
 
+    # keep only limited set of authors
+    dat_train_pre=dat_train_pre[dat_train_pre.author.isin(['Neil deGrasse Tyson', 'Ellen DeGeneres', 'Sebastian Ruder','KATY PERRY', 'Kim Kardashian West', 'Elon Musk', 'Barack Obama','Cristiano Ronaldo'])]
+    dat_train_pre.reset_index(inplace=True,drop=True)
+    
+    # convert text raw text and labels to python list
+    doc_list=dat_train_pre['tweet'].tolist()
+    label_list=dat_train_pre['labels'].tolist()
+
+    # Initialize parameter for TextFeatureSelectionEnsemble and start training
+    gaObj=TextFeatureSelectionEnsemble(doc_list,label_list,n_crossvalidation=2,pickle_path='/home/user/folder/',average='micro',base_model_list=['LogisticRegression','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'])
+    best_columns=gaObj.doTFSE()
+    
+    
