@@ -939,7 +939,9 @@ class TextFeatureSelectionEnsemble:
                    GeneticAlgorithmFS module is used from EvolutionaryFS python library.
                    Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
                    Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
-    
+    Parameters used are {"model_object":LogisticRegression(n_jobs=-1,random_state=1),"cost_function":f1_score,"average":'micro',"cost_function_improvement":'increase',"generations":20,"population":30,"prob_crossover":0.9,"prob_mutation":0.1,"run_time":60000}
+
+
     
     Output are saved in 4 folders
     ----------

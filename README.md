@@ -1,5 +1,5 @@
 # What is it?
-TextFeatureSelection is a Python library which helps improve text classification models through feature selection. It has 2 methods `TextFeatureSelection` and `TextFeatureSelectionGA` methods respectively.
+TextFeatureSelection is a Python library which helps improve text classification models through feature selection. It has 3 methods `TextFeatureSelection`, `TextFeatureSelectionGA` and `TextFeatureSelectionEnsemble` methods respectively.
 
 # First method: TextFeatureSelection
 It follows the `filter` method for feature selection. It provides a score for each word token. We can set a threshold for the score to decide which words to be included. There are 4 algorithms in this method, as follows.
@@ -204,9 +204,8 @@ Genetic algorithm feature selection parameters for ensemble model
   - **GAparameters** Parameters for genetic algorithm feature selection for ensemble learning. This is used for identifying best combination of base models for ensemble learning.
   It helps remove models which has no contribution for ensemble learning and keep only important models.
   GeneticAlgorithmFS module is used from EvolutionaryFS python library.
-  Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/
-  
-  Refer Example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
+  Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/ and example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
+  Parameters used are Parameters used are {"model_object":LogisticRegression(n_jobs=-1,random_state=1),"cost_function":f1_score,"average":'micro',"cost_function_improvement":'increase',"generations":20,"population":30,"prob_crossover":0.9,"prob_mutation":0.1,"run_time":60000}
     
     
   Output are saved in 4 folders
@@ -225,18 +224,14 @@ Genetic algorithm feature selection parameters for ensemble model
 
 # How to use is it?
 ```python
-# import csv from location: 'https://www.kaggle.com/azimulh/tweets-data-for-authorship-attribution-modelling?select=tweet_with_authors.csv'
-dat_train_pre=pd.read_csv('/home/user/tweet_with_authors.csv')
+
+imdb_data=pd.read_csv('../input/IMDB Dataset.csv')
 le = LabelEncoder()
-dat_train_pre['labels'] = le.fit_transform(dat_train_pre['author'].values)
+imdb_data['labels'] = le.fit_transform(imdb_data['sentiment'].values)
 
-# keep only limited set of authors
-dat_train_pre=dat_train_pre[dat_train_pre.author.isin(['Neil deGrasse Tyson', 'Ellen DeGeneres', 'Sebastian Ruder','KATY PERRY', 'Kim Kardashian West', 'Elon Musk', 'Barack Obama','Cristiano Ronaldo'])]
-dat_train_pre.reset_index(inplace=True,drop=True)
-
-# convert text raw text and labels to python list
-doc_list=dat_train_pre['tweet'].tolist()
-label_list=dat_train_pre['labels'].tolist()
+# convert raw text and labels to python list
+doc_list=imdb_data['review'].tolist()
+label_list=imdb_data['labels'].tolist()
 
 # Initialize parameter for TextFeatureSelectionEnsemble and start training
 gaObj=TextFeatureSelectionEnsemble(doc_list,label_list,n_crossvalidation=2,pickle_path='/home/user/folder/',average='micro',base_model_list=['LogisticRegression','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'])
