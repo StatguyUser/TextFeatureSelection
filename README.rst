@@ -1,6 +1,8 @@
 What is it?
 ===========
 
+Companion library of machine learning book `Feature Engineering & Selection for Explainable Models A Second Course for Data Scientists`.
+
 TextFeatureSelection is a Python library which helps improve text classification models through feature selection. It has 3 methods `TextFeatureSelection`, `TextFeatureSelectionGA` and `TextFeatureSelectionEnsemble` methods respectively.
 
 First method: TextFeatureSelection
@@ -265,6 +267,10 @@ Where to get it?
 ================
 
 `pip install TextFeatureSelection`
+
+How to cite
+===========
+Md Azimul Haque (2022). Feature Engineering & Selection for Explainable Models A Second Course for Data Scientists
 
 Dependencies
 ============
