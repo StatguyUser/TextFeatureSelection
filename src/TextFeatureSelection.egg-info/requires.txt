@@ -3,4 +3,3 @@ pandas
 scikit-learn
 xgboost
 nltk
-EvolutionaryFS
