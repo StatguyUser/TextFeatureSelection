@@ -170,8 +170,11 @@ It uses grid search and document frequency for reducing vector size for individu
     
   - **doc_list** Python list with text documents for training base models
     
-    
+
   - **label_list** Python list with Y labels
+
+
+  - **use_class_weight** Boolean value representing if you want to apply class weight before training classifiers. Default is False.
 
     
   - **pickle_path** Path where base model, text feature vectors and ensemble models will be saved in PC.

@@ -153,36 +153,28 @@ Base Model Parameters
     
   - **doc_list** Python list with text documents for training base models
     
-    
   - **label_list** Python list with Y labels
 
+  - **use_class_weight** Boolean value representing if you want to apply class weight before training classifiers. Default is False.
     
   - **pickle_path** Path where base model, text feature vectors and ensemble models will be saved in PC.
     
-    
   - **n_crossvalidation** How many cross validation samples to be created. Higher value will result more time for model training. Lower number will result in less reliable model. Default is 5.
-    
     
   - **seed_num** Seed number for training base models as well as for creating cross validation data. Default is 1.
     
-    
   - **stop_words** Stop words for count and tfidf vectors. Default is None.
-    
     
   - **lowercase** Lowercasing for text in count and tfidf vector. Default is True
     
-    
   - **n_jobs** How many jobs to be run in parallel for training sklearn and xgboost models. Default is -1
-    
     
   - **cost_function** Cost function to optimize base models. During feature selection using grid search for base models, this cost function is used for identifying which words to be removed based on combination of lower and higer document frequency for words.
   Available options are 'f1', 'precision', 'recall'. Default is 'f1'
     
-    
   - **average** What averaging to be used for cost_function. Useful for multi-class classifications.
   Available options are 'micro','macro','samples','weighted' and 'binary'
   Default is 'binary'.
-    
     
   - **basemodel_nestimators** How many n_estimators. Used as a parameter for tree based models such as 'XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier'.
   Default is 500.

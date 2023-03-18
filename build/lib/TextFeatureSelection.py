@@ -884,8 +884,10 @@ class TextFeatureSelectionEnsemble:
     
     label_list : Python list with Y labels
 
+
     use_class_weight : Boolean value representing if you want to apply class weight before training classifiers. Default is False.
     
+
     pickle_path : Path where base model, text feature vectors and ensemble models will be saved in PC.
     
     
