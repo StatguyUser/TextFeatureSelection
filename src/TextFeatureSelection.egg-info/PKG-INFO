@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: TextFeatureSelection
-Version: 0.2.3
+Version: 0.2.4
 Summary: Python library for feature selection for text features. It has filter method, genetic algorithm and TextFeatureSelectionEnsemble for improving text classification models. Helps improve your machine learning models
 Home-page: https://github.com/StatguyUser/TextFeatureSelection
 Author: StatguyUser

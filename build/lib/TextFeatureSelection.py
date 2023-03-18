@@ -1065,7 +1065,8 @@ class TextFeatureSelectionEnsemble:
             data_dict[i]=temp_dict
 
             if self.use_class_weight:
-                class_weights_dict[i] = compute_class_weight(class_weight="balanced",classes=np.unique(label_list_train),y=label_list_train)
+                temp_val = compute_class_weight(class_weight="balanced",classes=np.unique(label_list_train),y=label_list_train)
+                class_weights_dict[i] = dict(zip(np.unique(label_list_train),temp_val))
 
         return data_dict,class_weights_dict
 
