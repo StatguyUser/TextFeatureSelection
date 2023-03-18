@@ -163,7 +163,7 @@ Third method: TextFeatureSelectionEnsemble
 
 TextFeatureSelectionEnsemble helps ensemble multiple models to find best model combination with highest performance.
 
-It uses grid search and document frequency for reducing vector size for individual models. This makes individual models less complex and computationally faster. At the ensemble learning layer, genetic algorithm is used for identifying the smallest possible combination of individual models which has the highest impact on ensemble model performance.
+It uses grid search and document frequency for reducing vector size for individual models. This makes individual models less complex and computationally faster. At the ensemble learning layer, metaheuristics algorithm is used for identifying the smallest possible combination of individual models which has the highest impact on ensemble model performance.
 
     Base Model Parameters
 
@@ -218,15 +218,43 @@ It uses grid search and document frequency for reducing vector size for individu
   Default is ['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier']
   
 
-    Genetic algorithm feature selection parameters for ensemble model
+    Metaheuristic algorithm feature selection parameters for ensemble model
 
+  - **method** Which method you want to specify for metaheuristics feature selection. The available methods are 'ga', 'sa', 'aco', and 'pso'. These stand for genetic algorithm, simulated annealing, ant colony optimization, and particle swarm optimization respectively. You can select one out of the 4. Default is 'ga'.
     
-  - **GAparameters** Parameters for genetic algorithm feature selection for ensemble learning. This is used for identifying best combination of base models for ensemble learning.
-  It helps remove models which has no contribution for ensemble learning and keep only important models.
-  GeneticAlgorithmFS module is used from EvolutionaryFS python library.
-  Refer documentation for GeneticAlgorithmFS at: https://pypi.org/project/EvolutionaryFS/ and example usage of GeneticAlgorithmFS for feature selection: https://www.kaggle.com/azimulh/feature-selection-using-evolutionaryfs-library
-  Parameters used are {"model_object":LogisticRegression(n_jobs=-1,random_state=1),"cost_function":f1_score,"average":'micro',"cost_function_improvement":'increase',"generations":20,"population":30,"prob_crossover":0.9,"prob_mutation":0.1,"run_time":60000}
-    
+  - **MetaHeuristicsParameters** Parameters for the metaheuristics feature selection method for ensemble learning. This is used for identifying best combination of base models for ensemble learning. It helps remove models which has no contribution for ensemble learning and keep only important models.
+
+  `FeatureSelection` module is used from `MetaHeuristicsFS` python library.
+  Refer documentation for `MetaHeuristicsFS` at: https://pypi.org/project/MetaHeuristicsFS/ and example usage of MetaHeuristicsFS for feature selection: https://github.com/StatguyUser/feature_engineering_and_selection_for_explanable_models/blob/37ba0d2921fbabbb83df44c6eb7a1242b19a637f/Chapter%208%20-%20Hotel%20Cancelation%20.ipynb
+
+  Parameters used are
+
+```python
+  {"model_object": LogisticRegression(n_jobs=-1,random_state=1),
+  "cost_function":f1_score,
+  "average":'micro',
+  "cost_function_improvement":'increase',
+  "ga_parameters":{"generations":50,
+                  "population":50,
+                  "prob_crossover":0.9,
+                  "prob_mutation":0.1,
+                  "run_time":120},
+  "sa_parameters":{"temperature":1500,
+                  "iterations":50,
+                  "n_perturb":1,
+                  "n_features_percent_perturb":1,
+                  "alpha":0.9,
+                  "run_time":120},
+  "aco_parameters":{"iterations":50,
+                  "N_ants":50,
+                  "evaporation_rate":0.9,
+                  "Q":0.2,
+                  "run_time":120},
+  "pso_parameters":{"iterations":50,
+                  "swarmSize":50,
+                  "run_time":120}
+  }
+```
     
     Output are saved in 4 folders
 
@@ -285,7 +313,7 @@ Dependencies
 
  - [nltk](https://www.nltk.org/)
 
- - [EvolutionaryFS](https://pypi.org/project/EvolutionaryFS/)
+ - [MetaHeuristicsFS](https://pypi.org/project/MetaHeuristicsFS/)
 
  - [collections](https://docs.python.org/2/library/collections.html)
 
