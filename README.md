@@ -273,7 +273,7 @@ Md Azimul Haque (2022). Feature Engineering & Selection for Explainable Models A
  - [scikit-learn](https://scikit-learn.org/stable/)
  - [xgboost](https://xgboost.readthedocs.io/en/latest/)
  - [nltk](https://www.nltk.org/)
- - [EvolutionaryFS](https://pypi.org/project/EvolutionaryFS/)
+ - [MetaHeuristicsFS](https://pypi.org/project/MetaHeuristicsFS/)
  - [collections](https://docs.python.org/2/library/collections.html)
 
 # References
