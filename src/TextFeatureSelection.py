@@ -890,6 +890,7 @@ class TextFeatureSelectionEnsemble:
 
     pickle_path : Path where base model, text feature vectors and ensemble models will be saved in PC.
     
+    save_data : Boolean True | False. Default is False. Whether datasets used for training base model, and ensemble models will be saved in PC.
     
     n_crossvalidation : How many cross validation samples to be created. Higher value will result more time for model training. Lower number will result in less reliable model. Default is 5.
     
@@ -982,16 +983,19 @@ class TextFeatureSelectionEnsemble:
     ensemble_model : It has ensemble model
     
     deleted : It has base model and vectors for models which were discarded by genetic algorithm.
+
+    data_files : It has list of data files used for training base models, and ensemble model
     
-    Apart from above 4, it also saves and return list of columns which are used in ensemble layer with name best_ensemble_columns
+    Apart from above 5, it also saves and return list of columns which are used in ensemble layer with name best_ensemble_columns
     These columns are used in the exact same order for feature matrix in ensemble layer.
     
     '''
 
-    def __init__(self,doc_list,label_list,pickle_path=None,n_crossvalidation=5,seed_num=1,stop_words=None,lowercase=True,n_jobs=-1,cost_function='f1',average='binary',basemodel_nestimators=500,feature_list=['Unigram','Bigram','Trigram'],vector_list=['CountVectorizer','TfidfVectorizer'],base_model_list=['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'],method='ga',MetaHeuristicsParameters={"model_object": LogisticRegression(n_jobs=-1,random_state=1),"cost_function":f1_score,  "average":'micro',  "cost_function_improvement":'increase',"ga_parameters":{"generations":50,"population":50,"prob_crossover":0.9,"prob_mutation":0.1,"run_time":120},"sa_parameters":{"temperature":1500,"iterations":50,"n_perturb":1,"n_features_percent_perturb":1,"alpha":0.9,"run_time":120},"aco_parameters":{"iterations":50,"N_ants":50,"evaporation_rate":0.9,"Q":0.2,"run_time":120},"pso_parameters":{"iterations":50,"swarmSize":50,"run_time":120}},use_class_weight=False):
+    def __init__(self,doc_list,label_list,pickle_path=None,save_data = False,n_crossvalidation=5,seed_num=1,stop_words=None,lowercase=True,n_jobs=-1,cost_function='f1',average='binary',basemodel_nestimators=500,feature_list=['Unigram','Bigram','Trigram'],vector_list=['CountVectorizer','TfidfVectorizer'],base_model_list=['LogisticRegression','XGBClassifier','AdaBoostClassifier','RandomForestClassifier','ExtraTreesClassifier','KNeighborsClassifier'],method='ga',MetaHeuristicsParameters={"model_object": LogisticRegression(n_jobs=-1,random_state=1),"cost_function":f1_score,  "average":'micro',  "cost_function_improvement":'increase',"ga_parameters":{"generations":50,"population":50,"prob_crossover":0.9,"prob_mutation":0.1,"run_time":120},"sa_parameters":{"temperature":1500,"iterations":50,"n_perturb":1,"n_features_percent_perturb":1,"alpha":0.9,"run_time":120},"aco_parameters":{"iterations":50,"N_ants":50,"evaporation_rate":0.9,"Q":0.2,"run_time":120},"pso_parameters":{"iterations":50,"swarmSize":50,"run_time":120}},use_class_weight=False):
         self.doc_list=doc_list
         self.label_list=label_list
         self.use_class_weight=use_class_weight
+        self.save_data=save_data
         self.pickle_path=pickle_path
         self.n_crossvalidation=n_crossvalidation
         self.seed_num=seed_num
@@ -1324,7 +1328,19 @@ class TextFeatureSelectionEnsemble:
         for model_combo in models_list:
             print('==================== Model started:',model_combo.split('_')[0],'model,',model_combo.split('_')[1],'feature with',model_combo.split('_')[2])
             minmaxValueDF,metaFeatures=self._doMaxdfMindfGridSearch(data_dict=data_dict,model_combo=model_combo,metaFeatures=metaFeatures,minmaxValueDF=minmaxValueDF,class_weights_dict=class_weights_dict)
+        
+        
+        if self.save_data:
+            with open(self.pickle_path+'data_files/'+'metaFeatures.pickle', 'wb') as handle:
+                pickle.dump(metaFeatures, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 
+            with open(self.pickle_path+'data_files/'+'data_dict.pickle', 'wb') as handle:
+                pickle.dump(data_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
+            if self.use_class_weight:
+                with open(self.pickle_path+'data_files/'+'class_weights_dict.pickle', 'wb') as handle:
+                    pickle.dump(class_weights_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
         return minmaxValueDF,metaFeatures
 
     def _getCommonColumns(self,metaFeatures):
@@ -1373,6 +1389,8 @@ class TextFeatureSelectionEnsemble:
             os.makedirs(self.pickle_path+'ensemble_model', exist_ok=True)
             os.makedirs(self.pickle_path+'deleted/model', exist_ok=True)
             os.makedirs(self.pickle_path+'deleted/vector', exist_ok=True)
+            if self.save_data:
+                os.makedirs(self.pickle_path+'data_files', exist_ok=True)
             
         
         minmaxValueDF,metaFeatures=self._getBaseColumns()
