@@ -179,6 +179,7 @@ It uses grid search and document frequency for reducing vector size for individu
     
   - **pickle_path** Path where base model, text feature vectors and ensemble models will be saved in PC.
     
+  - **save_data** Boolean True | False. Default is False. Whether datasets used for training base model, and ensemble models will be saved in PC.
     
   - **n_crossvalidation** How many cross validation samples to be created. Higher value will result more time for model training. Lower number will result in less reliable model. Default is 5.
     
@@ -269,8 +270,10 @@ It uses grid search and document frequency for reducing vector size for individu
   - **ensemble_model** It has ensemble model
     
   - **deleted** It has base model and vectors for models which were discarded by genetic algorithm.
+
+  - **data_files** It has list of data files used for training base models, and ensemble model
     
-    Apart from above 4, it also saves and return list of columns which are used in ensemble layer with name best_ensemble_columns
+    Apart from above 5, it also saves and return list of columns which are used in ensemble layer with name best_ensemble_columns
     These columns are used in the exact same order for feature matrix in ensemble layer.
 
 
