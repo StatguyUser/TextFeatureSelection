@@ -1154,7 +1154,7 @@ class TextFeatureSelectionEnsemble:
     def _doMaxdfMindfGridSearch(self,data_dict,model_combo,metaFeatures,minmaxValueDF,class_weights_dict):
 
         mindf_list=[0,1,2,3,4]#,5]
-        maxdf_list=[0,0.4,0.5,0.65]#,0.89,0.90]#,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98]
+        maxdf_list=[0,0.2,0.3,0.4,0.5,0.65]#,0.89,0.90]#,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98]
         
         vector_type=model_combo.split('_')[2]
         model_name=model_combo.split('_')[0]
