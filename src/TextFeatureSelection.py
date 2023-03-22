@@ -1199,10 +1199,9 @@ class TextFeatureSelectionEnsemble:
                         model=self._getBaseModel(model_name=model_name,class_weights_dict=class_weights_dict[fold])
                         ##train model
                         
-                        if model_name=='XGBClassifier' and self.use_class_weight:
-                            model.fit(Train_vector,label_train,sample_weight=class_weights_dict[fold])
-                        else:
+                        if model_name=='XGBClassifier':
                             model.fit(Train_vector,label_train)
+
                         label_test_predict=model.predict(test_vector)
                         
                         test_cost=self._cost_function_value(label_test,label_test_predict)
@@ -1270,9 +1269,7 @@ class TextFeatureSelectionEnsemble:
             model=self._getBaseModel(model_name=model_name,class_weights_dict=class_weights_dict[fold])            
             ##train model
             
-            if model_name=='XGBClassifier' and self.use_class_weight:
-                model.fit(Train_vector,label_train,sample_weight=class_weights_dict[fold])
-            else:
+            if model_name=='XGBClassifier':
                 model.fit(Train_vector,label_train)
 
             label_metaTrain_predict_final=model.predict_proba(metaTrain_vector)
