@@ -1198,9 +1198,8 @@ class TextFeatureSelectionEnsemble:
                         #get model
                         model=self._getBaseModel(model_name=model_name,class_weights_dict=class_weights_dict[fold])
                         ##train model
-                        
-                        if model_name=='XGBClassifier':
-                            model.fit(Train_vector,label_train)
+
+                        model.fit(Train_vector,label_train)
 
                         label_test_predict=model.predict(test_vector)
                         
@@ -1268,9 +1267,8 @@ class TextFeatureSelectionEnsemble:
             #get model
             model=self._getBaseModel(model_name=model_name,class_weights_dict=class_weights_dict[fold])            
             ##train model
-            
-            if model_name=='XGBClassifier':
-                model.fit(Train_vector,label_train)
+
+            model.fit(Train_vector,label_train)
 
             label_metaTrain_predict_final=model.predict_proba(metaTrain_vector)
             label_test_predict_final=model.predict_proba(test_vector)
