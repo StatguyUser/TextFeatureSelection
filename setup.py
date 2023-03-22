@@ -12,7 +12,7 @@ else:
 
 setup(
     name='TextFeatureSelection',
-    version='0.2.5',
+    version='0.2.6',
     description='Python library for feature selection for text features. It has filter method, genetic algorithm and TextFeatureSelectionEnsemble for improving text classification models. Helps improve your machine learning models',
     long_description=long_description,
     long_description_content_type='text/markdown',  # This is important!
