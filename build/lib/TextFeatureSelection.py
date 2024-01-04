@@ -494,7 +494,7 @@ class TextFeatureSelectionGA():
         return metric
 
 
-    def _computeFitness(self,gene,unique_words,x,y,model,model_metric,avrg,analyzer,min_df,max_df,stop_words,tokenizer,token_pattern,lowercase):
+    def _computeFitness(self,gene,unique_words,x,y,model,model_metric,avrg,analyzer,min_df,max_df,stop_words,tokenizer,token_pattern,lowercase,vocabulary,ngram_range):
         ### create tfidf matrix for only terms which are in gene
         # get terms from gene and vocabulary combnation
         term_to_use=list(np.array(unique_words)[list(map(bool,gene))])
@@ -511,7 +511,7 @@ class TextFeatureSelectionGA():
             y_train, y_test = np.array(y)[train_index],np.array(y)[test_index]
 
             ##based on vocabulary set, create tfidf matrix for train and test data
-            tfidf=TfidfVectorizer(vocabulary=term_to_use,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+            tfidf=TfidfVectorizer(vocabulary=term_to_use,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
             tfidfvec_vectorizer=tfidf.fit(X_train)
 
             #get x train and test
@@ -564,7 +564,7 @@ class TextFeatureSelectionGA():
         return population_matrix
 
 
-    def _get_parents(self,population_array,population_matrix,unique_words,x,y,model,model_metric,avrg,analyzer,min_df,max_df,stop_words,tokenizer,token_pattern,lowercase):
+    def _get_parents(self,population_array,population_matrix,unique_words,x,y,model,model_metric,avrg,analyzer,min_df,max_df,stop_words,tokenizer,token_pattern,lowercase,vocabulary,ngram_range):
 
         #keep space for best chromosome
         parents = np.empty((0,population_array.shape[0]))
@@ -587,15 +587,15 @@ class TextFeatureSelectionGA():
             ##gene pool 1
             gene_1 = population_matrix[index_run[0]]
             #cost of gene 1
-            cost1=self._computeFitness(gene=gene_1,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+            cost1=self._computeFitness(gene=gene_1,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
             ##gene pool 2
             gene_2 = population_matrix[index_run[1]]
             #cost of gene 2
-            cost2=self._computeFitness(gene=gene_2,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+            cost2=self._computeFitness(gene=gene_2,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
             ##gene pool 3
             gene_3 = population_matrix[index_run[2]]
             #cost of gene 3
-            cost3=self._computeFitness(gene=gene_3,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+            cost3=self._computeFitness(gene=gene_3,unique_words=unique_words,x=x,y=y,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
 
             #get best chromosome from 3 and assign best chromosome.
             if cost1==max(cost1,cost2,cost3):
@@ -681,7 +681,7 @@ class TextFeatureSelectionGA():
             t = t+1
         return mutated_child
     
-    def _getPopulationAndMatrix(self,doc_list,label_list,analyzer,min_df,max_df,stop_words,tokenizer,token_pattern,lowercase):
+    def _getPopulationAndMatrix(self,doc_list,label_list,analyzer,min_df,max_df,stop_words,tokenizer,token_pattern,lowercase,vocabulary,ngram_range):
         #get null free df
         temp_df=pd.DataFrame({'doc_list':doc_list,'label_list':label_list})
         temp_df=temp_df[(~temp_df['doc_list'].isna()) & (~temp_df['label_list'].isna())]
@@ -692,7 +692,7 @@ class TextFeatureSelectionGA():
         gc.collect()
 
         #get unique tokens
-        tfidfvec = TfidfVectorizer(analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+        tfidfvec = TfidfVectorizer(analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,vocabulary=vocabulary,ngram_range=ngram_range,lowercase=lowercase)
         tfidfvec_vectorizer = tfidfvec.fit(doc_list)
         unique_words=list(tfidfvec_vectorizer.vocabulary_.keys())
 
@@ -715,7 +715,7 @@ class TextFeatureSelectionGA():
         
         return doc_list,label_list,unique_words,population_array,population_matrix,best_of_a_generation
 
-    def getGeneticFeatures(self,doc_list,label_list,model=LogisticRegression(),model_metric='f1',avrg='binary',analyzer='word',min_df=2,max_df=1.0,stop_words=None,tokenizer=None,token_pattern='(?u)\\b\\w\\w+\\b',lowercase=True):
+    def getGeneticFeatures(self,doc_list,label_list,model=LogisticRegression(),model_metric='f1',avrg='binary',analyzer='word',min_df=2,max_df=1.0,stop_words=None,tokenizer=None,token_pattern='(?u)\\b\\w\\w+\\b',lowercase=True,vocabulary=None,ngram_range=(3,5)):
         '''
         Data Parameters
         ----------        
@@ -805,7 +805,7 @@ class TextFeatureSelectionGA():
             avrg='binary'
         
         #get all parameters needed for GA
-        doc_list,label_list,unique_words,population_array,population_matrix,best_of_a_generation=self._getPopulationAndMatrix(doc_list,label_list,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+        doc_list,label_list,unique_words,population_array,population_matrix,best_of_a_generation=self._getPopulationAndMatrix(doc_list,label_list,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
         
         #Execute GA
         for genrtn in range(self.generations):
@@ -829,7 +829,7 @@ class TextFeatureSelectionGA():
             # Doing it half the population size will mean getting matrix of population size equal to original matrix
             for family in range(int(self.population/2)):
                 #get parents
-                parent1,parent2=self._get_parents(population_array=population_array,population_matrix=population_matrix,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+                parent1,parent2=self._get_parents(population_array=population_array,population_matrix=population_matrix,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
 
                 #crossover
                 child1,child2=self._crossover(parent1=parent1,parent2=parent2,prob_crossover=self.prob_crossover)
@@ -839,8 +839,8 @@ class TextFeatureSelectionGA():
                 mutated_child2=self._mutation(child=child2,prob_mutation=self.prob_mutation)
 
                 #get cost function for 2 mutated child and print for generation, family and child
-                cost1=self._computeFitness(gene=mutated_child1,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
-                cost2=self._computeFitness(gene=mutated_child2,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase)
+                cost1=self._computeFitness(gene=mutated_child1,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
+                cost2=self._computeFitness(gene=mutated_child2,unique_words=unique_words,x=doc_list,y=label_list,model=model,model_metric=model_metric,avrg=avrg,analyzer=analyzer,min_df=min_df,max_df=max_df,stop_words=stop_words,tokenizer=tokenizer,token_pattern=token_pattern,lowercase=lowercase,vocabulary=vocabulary,ngram_range=ngram_range)
 
                 #create population for next generaion
                 new_population = np.vstack((new_population,mutated_child1,mutated_child2))
